@@ -133,7 +133,7 @@ Tab1:AddToggle({
 
 
 
-## слайдер
+## Слайдер
 ```lua
 Tab1:AddSlider({
   Name = "Tween Speed",

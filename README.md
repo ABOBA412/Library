@@ -20,7 +20,7 @@
 
 ## 1 Способ через loadstring
 ```lua
-local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/Library-ui/refs/heads/main/Redzhubui"))()
+local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/ABOBA412/Library/refs/heads/main/Source.lua"))()
 ```
 # 2 Способ локальный
 ```lua

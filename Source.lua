@@ -2311,7 +2311,41 @@ end
 					Padding = UDim.new(0, 4)
 				})
 			}), "ScrollBar")
-			
+
+				-- Создаём поле поиска
+local SearchBox = Create("TextBox", DropFrame, {
+    Size = UDim2.new(1, -16, 0, 20),
+    Position = UDim2.new(0, 8, 0, 8),
+    BackgroundTransparency = 0.2,
+    BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+    TextColor3 = Theme["Color Text"],
+    Font = Enum.Font.Gotham,
+    TextSize = 14,
+    PlaceholderText = "Search...",
+    ClearTextOnFocus = false,
+})
+
+Make("Corner", SearchBox, UDim.new(0, 4))
+
+
+ScrollFrame.Position = UDim2.new(0, 0, 0, 28)
+ScrollFrame.Size = UDim2.new(1, 0, 1, -28)
+
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local query = string.lower(SearchBox.Text)
+
+    for _, child in ipairs(ScrollFrame:GetChildren()) do
+        if child:IsA("Frame") or child.Name == "Option" then
+            local label = child:FindFirstChildWhichIsA("TextLabel")
+            if label then
+                local match = string.find(string.lower(label.Text), query, 1, true)
+                child.Visible = (query == "" or match ~= nil)
+            end
+        end
+    end
+end)
+
 			local ScrollSize, WaitClick = 5
 			local function Disable()
 				WaitClick = true

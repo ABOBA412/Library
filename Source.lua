@@ -36,7 +36,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(245, 245, 245),
 			["Color Dark Text"] = Color3.fromRGB(190, 190, 190)
 		},
-                Red = {
+        Red = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -48,7 +48,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                Yellow = {
+        Yellow = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -60,7 +60,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                Green = {
+        Green = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -72,7 +72,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                Blue = {
+        Blue = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -84,7 +84,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                White = {
+        White = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -115,7 +115,7 @@ local redzlib = {
 	Save = {
 		UISize = {550, 380},
 		TabSize = 160,
-		Theme = "Purple"
+		Theme = "Darker"
 	},
 	Settings = {},
 	Connection = {},
@@ -2312,39 +2312,140 @@ end
 				})
 			}), "ScrollBar")
 
-				-- Создаём поле поиска
+				-- === Search UI patch (paste after ScrollFrame creation) ===
+local TweenService = game:GetService("TweenService")
+
+-- helper tween (fallback на TweenService)
+local function doTween(instance, props, time)
+    time = time or 0.15
+    local info = TweenInfo.new(time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local ok, t = pcall(function()
+        return TweenService:Create(instance, info, props)
+    end)
+    if ok and t then
+        t:Play()
+    end
+end
+
+-- Параметры размера / отступов
+local SEARCH_HEIGHT = 24
+local SEARCH_OPEN_WIDTH = 140
+local SEARCH_MARGIN_TOP = 6
+local SEARCH_MARGIN_RIGHT = 6
+
+-- создаём кнопку-лупу (в правом верхнем углу DropFrame)
+local SearchBtn = Create("TextButton", DropFrame, {
+    Name = "SearchToggle",
+    Size = UDim2.new(0, 24, 0, 24),
+    Position = UDim2.new(1, -SEARCH_MARGIN_RIGHT, 0, SEARCH_MARGIN_TOP),
+    AnchorPoint = Vector2.new(1, 0),
+    BackgroundTransparency = 0.6,
+    AutoButtonColor = false,
+    Text = "🔍",
+    Font = Enum.Font.GothamBold,
+    TextSize = 18,
+    TextColor3 = Theme["Color Text"]
+})
+Make("Corner", SearchBtn, UDim.new(0, 6))
+SearchBtn.Visible = false -- показываем только при открытом дропдауне
+
+-- создаём TextBox, который будет "разворачиваться" слева от лупы
 local SearchBox = Create("TextBox", DropFrame, {
-    Size = UDim2.new(1, -16, 0, 20),
-    Position = UDim2.new(0, 8, 0, 8),
-    BackgroundTransparency = 0.2,
-    BackgroundColor3 = Color3.fromRGB(30, 30, 30),
-    TextColor3 = Theme["Color Text"],
+    Name = "SearchBox",
+    Size = UDim2.new(0, 0, 0, SEARCH_HEIGHT), -- стартовая ширина 0
+    Position = UDim2.new(1, -SEARCH_MARGIN_RIGHT - 24, 0, SEARCH_MARGIN_TOP), -- правый край у лупы
+    AnchorPoint = Vector2.new(1, 0),
+    BackgroundTransparency = 0.6,
+    Text = "",
+    PlaceholderText = "search...",
+    ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     TextSize = 14,
-    PlaceholderText = "Search...",
-    ClearTextOnFocus = false,
+    TextColor3 = Theme["Color Text"]
 })
+Make("Corner", SearchBox, UDim.new(0, 6))
+SearchBox.Visible = false
 
-Make("Corner", SearchBox, UDim.new(0, 4))
+-- Подвинем ScrollFrame вниз, чтобы место для строки поиска появилось
+ScrollFrame.Position = UDim2.new(0, 0, 0, SEARCH_HEIGHT + SEARCH_MARGIN_TOP + 4)
+ScrollFrame.Size = UDim2.new(1, 0, 1, -(SEARCH_HEIGHT + SEARCH_MARGIN_TOP + 8))
 
+local searchOpen = false
 
-ScrollFrame.Position = UDim2.new(0, 0, 0, 28)
-ScrollFrame.Size = UDim2.new(1, 0, 1, -28)
-
-
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local query = string.lower(SearchBox.Text)
-
-    for _, child in ipairs(ScrollFrame:GetChildren()) do
-        if child:IsA("Frame") or child.Name == "Option" then
-            local label = child:FindFirstChildWhichIsA("TextLabel")
-            if label then
-                local match = string.find(string.lower(label.Text), query, 1, true)
-                child.Visible = (query == "" or match ~= nil)
-            end
+-- функция закрытия поиска
+local function closeSearch()
+    if not searchOpen then return end
+    SearchBox.Text = ""
+    doTween(SearchBox, {Size = UDim2.new(0, 0, 0, SEARCH_HEIGHT)}, 0.15)
+    task.delay(0.16, function() SearchBox.Visible = false end)
+    searchOpen = false
+    -- сброс фильтра (показываем все опции)
+    for _,child in ipairs(ScrollFrame:GetChildren()) do
+        if child.Name == "Option" then
+            child.Visible = true
         end
     end
+    CalculateSize()
+end
+
+-- функция открытия поиска
+local function openSearch()
+    if searchOpen then return end
+    SearchBox.Visible = true
+    doTween(SearchBox, {Size = UDim2.new(0, SEARCH_OPEN_WIDTH, 0, SEARCH_HEIGHT)}, 0.15)
+    task.delay(0.12, function()
+        -- попытка поставить фокус (работает в клиенте)
+        pcall(function() SearchBox:CaptureFocus() end)
+    end)
+    searchOpen = true
+end
+
+-- Тоггл по лупе
+SearchBtn.Activated:Connect(function()
+    if searchOpen then
+        closeSearch()
+    else
+        openSearch()
+    end
 end)
+
+-- Показываем/скрываем кнопку-лупу вместе с открытием дропдауна
+NoClickFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+    SearchBtn.Visible = NoClickFrame.Visible
+    if not NoClickFrame.Visible then
+        -- если дропдаун закрылся — свернуть поиск
+        closeSearch()
+    end
+end)
+
+-- Функция фильтрации: прячет/показывает опции в ScrollFrame по тексту
+local function filterOptions(query)
+    query = tostring(query or "")
+    local q = string.lower(query)
+    for _,child in ipairs(ScrollFrame:GetChildren()) do
+        if child.Name == "Option" then
+            local label = child:FindFirstChildWhichIsA("TextLabel")
+            local txt = ""
+            if label and label.Text then txt = label.Text end
+            local ok = (q == "") or (string.find(string.lower(txt), q, 1, true) ~= nil)
+            child.Visible = ok
+        end
+    end
+    -- пересчитываем размер дропдауна, учитывая видимые элементы
+    CalculateSize()
+end
+
+-- Привязка к изменению текста
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    filterOptions(SearchBox.Text)
+end)
+
+-- Закрываем поиск, если пользователь нажал вне (NoClickFrame already closes dropdown)
+NoClickFrame.MouseButton1Click:Connect(function()
+    closeSearch()
+end)
+-- === end of search UI patch ===
+
 
 			local ScrollSize, WaitClick = 5
 			local function Disable()

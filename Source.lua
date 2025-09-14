@@ -2312,95 +2312,149 @@ end
 				})
 			}), "ScrollBar")
 
-				-- === Search UI patch (paste after ScrollFrame creation) ===
+				-- ======= Search button (place this RIGHT AFTER ScrollFrame creation, BEFORE `local ScrollSize, WaitClick = 5`) =======
 local TweenService = game:GetService("TweenService")
 
--- helper tween (fallback на TweenService)
-local function doTween(instance, props, time)
-    time = time or 0.15
-    local info = TweenInfo.new(time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local ok, t = pcall(function()
-        return TweenService:Create(instance, info, props)
-    end)
-    if ok and t then
-        t:Play()
+-- safe CreateTween fallback (используем твою CreateTween если есть)
+local function safeTween(target, propTable, time)
+    time = time or 0.16
+    if type(CreateTween) == "function" then
+        -- ожидаемый формат: CreateTween({Instance, "Property", Value, time, maybeBoolean})
+        -- Для совместимости вызываем в более универсальном стиле, если CreateTween принимает таблицу
+        pcall(function() CreateTween({target, propTable, time}) end)
+        -- если CreateTween другая сигнатура - всё равно будет использовано ранее объявленное в библиотеке
+        return
     end
+    local info = TweenInfo.new(time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local ok, tween = pcall(function() return TweenService:Create(target, info, propTable) end)
+    if ok and tween then tween:Play() end
 end
 
--- Параметры размера / отступов
-local SEARCH_HEIGHT = 24
-local SEARCH_OPEN_WIDTH = 140
-local SEARCH_MARGIN_TOP = 6
-local SEARCH_MARGIN_RIGHT = 6
+local SEARCH_HEIGHT = 22
+local SEARCH_EXPANDED_W = 160
+local SEARCH_MARGIN = 6
 
--- создаём кнопку-лупу (в правом верхнем углу DropFrame)
-local SearchBtn = Create("TextButton", DropFrame, {
-    Name = "SearchToggle",
-    Size = UDim2.new(0, 24, 0, 24),
-    Position = UDim2.new(1, -SEARCH_MARGIN_RIGHT, 0, SEARCH_MARGIN_TOP),
-    AnchorPoint = Vector2.new(1, 0),
-    BackgroundTransparency = 0.6,
-    AutoButtonColor = false,
+-- parent for floating controls — используем ScreenGui чтобы позиционировать по абсолютным координатам
+local FloatParent = ScreenGui or (Button and Button.Parent) or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+-- создаём кнопку-лупу как отдельный GUI рядом с SelectedFrame (не внутри DropFrame)
+local SearchBtn = Create("TextButton", FloatParent, {
+    Name = "DropdownSearchToggle",
+    Size = UDim2.fromOffset(22, SEARCH_HEIGHT),
+    BackgroundTransparency = 0.3,
+    AutoButtonColor = true,
     Text = "🔍",
     Font = Enum.Font.GothamBold,
-    TextSize = 18,
-    TextColor3 = Theme["Color Text"]
+    TextSize = 16,
+    TextColor3 = Theme["Color Theme"] or Theme["Color Text"] or Color3.fromRGB(200,200,200),
+    ZIndex = (DropFrame and DropFrame.ZIndex or 1) + 5
 })
-Make("Corner", SearchBtn, UDim.new(0, 6))
-SearchBtn.Visible = false -- показываем только при открытом дропдауне
+Make("Corner", SearchBtn, UDim.new(0,6))
+SearchBtn.Visible = false
 
--- создаём TextBox, который будет "разворачиваться" слева от лупы
-local SearchBox = Create("TextBox", DropFrame, {
-    Name = "SearchBox",
-    Size = UDim2.new(0, 0, 0, SEARCH_HEIGHT), -- стартовая ширина 0
-    Position = UDim2.new(1, -SEARCH_MARGIN_RIGHT - 24, 0, SEARCH_MARGIN_TOP), -- правый край у лупы
-    AnchorPoint = Vector2.new(1, 0),
-    BackgroundTransparency = 0.6,
+-- создаём текстбокс тоже в FloatParent и позиционируем его слева от SearchBtn при открытии
+local SearchBox = Create("TextBox", FloatParent, {
+    Name = "DropdownSearchBox",
+    Size = UDim2.fromOffset(0, SEARCH_HEIGHT),
+    BackgroundTransparency = 0.2,
     Text = "",
     PlaceholderText = "search...",
     ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     TextSize = 14,
-    TextColor3 = Theme["Color Text"]
+    TextColor3 = Theme["Color Text"] or Color3.fromRGB(230,230,230),
+    ZIndex = (DropFrame and DropFrame.ZIndex or 1) + 4
 })
-Make("Corner", SearchBox, UDim.new(0, 6))
+Make("Corner", SearchBox, UDim.new(0,6))
 SearchBox.Visible = false
 
--- Подвинем ScrollFrame вниз, чтобы место для строки поиска появилось
-ScrollFrame.Position = UDim2.new(0, 0, 0, SEARCH_HEIGHT + SEARCH_MARGIN_TOP + 4)
-ScrollFrame.Size = UDim2.new(1, 0, 1, -(SEARCH_HEIGHT + SEARCH_MARGIN_TOP + 8))
+-- helper: находит первый TextLabel рекурсивно внутри node
+local function findLabel(node)
+    if not node then return nil end
+    if node:IsA("TextLabel") then return node end
+    for _,ch in ipairs(node:GetChildren()) do
+        local found = findLabel(ch)
+        if found then return found end
+    end
+    return nil
+end
 
 local searchOpen = false
 
--- функция закрытия поиска
+-- позиционируем плавающие элементы рядом с SelectedFrame (следим за абсолютной позицией)
+local function updateFloatingPos()
+    if not SelectedFrame or not SelectedFrame:IsDescendantOf(game) then return end
+    local ap = SelectedFrame.AbsolutePosition
+    local asz = SelectedFrame.AbsoluteSize
+    -- позиция лупы — справа от SelectedFrame с небольшим отступом
+    local x = ap.X + asz.X + SEARCH_MARGIN
+    local y = ap.Y + (asz.Y/2) - (SEARCH_HEIGHT/2)
+    SearchBtn.Position = UDim2.fromOffset(x, y)
+    -- позиция бокса — слева от лупы
+    local boxW = SearchBox.AbsoluteSize.X
+    SearchBox.Position = UDim2.fromOffset(x - boxW - SEARCH_MARGIN, y)
+end
+
+-- обновляем позицию при изменениях SelectedFrame
+if SelectedFrame then
+    SelectedFrame:GetPropertyChangedSignal("AbsolutePosition"):Connect(updateFloatingPos)
+    SelectedFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() 
+        -- немножко delay чтобы AbsoluteSize обновился корректно
+        task.delay(0, updateFloatingPos)
+    end)
+end
+
+-- открываем/закрываем поиск (анимация размера SearchBox)
+local function openSearch()
+    if searchOpen then return end
+    searchOpen = true
+    SearchBox.Visible = true
+    -- сначала поместим позицию (чтобы AbsoluteSize корректно рассчитывалось в tween)
+    updateFloatingPos()
+    safeTween(SearchBox, {Size = UDim2.fromOffset(SEARCH_EXPANDED_W, SEARCH_HEIGHT)}, 0.18)
+    -- выделяем поле
+    pcall(function() SearchBox:CaptureFocus() end)
+end
+
 local function closeSearch()
     if not searchOpen then return end
-    SearchBox.Text = ""
-    doTween(SearchBox, {Size = UDim2.new(0, 0, 0, SEARCH_HEIGHT)}, 0.15)
-    task.delay(0.16, function() SearchBox.Visible = false end)
     searchOpen = false
-    -- сброс фильтра (показываем все опции)
+    -- очистим текст и свернём
+    SearchBox.Text = ""
+    safeTween(SearchBox, {Size = UDim2.fromOffset(0, SEARCH_HEIGHT)}, 0.14)
+    task.delay(0.16, function()
+        SearchBox.Visible = false
+    end)
+    -- сброс фильтра: показываем все опции
     for _,child in ipairs(ScrollFrame:GetChildren()) do
-        if child.Name == "Option" then
+        if child.Name == "Option" or child:IsA("Frame") then
             child.Visible = true
+        end
+    end
+    CalculateSize() -- пересчитываем размер видимого списка
+end
+
+-- фильтрация опций по запросу (регистро-независимо)
+local function filterOptions(query)
+    local q = tostring(query or ""):lower()
+    for _,child in ipairs(ScrollFrame:GetChildren()) do
+        if (child.Name == "Option" or child:IsA("Frame")) then
+            local label = findLabel(child)
+            local txt = ""
+            if label and label.Text then txt = label.Text end
+            local ok = (q == "") or (string.find(string.lower(txt), q, 1, true) ~= nil)
+            child.Visible = ok
         end
     end
     CalculateSize()
 end
 
--- функция открытия поиска
-local function openSearch()
-    if searchOpen then return end
-    SearchBox.Visible = true
-    doTween(SearchBox, {Size = UDim2.new(0, SEARCH_OPEN_WIDTH, 0, SEARCH_HEIGHT)}, 0.15)
-    task.delay(0.12, function()
-        -- попытка поставить фокус (работает в клиенте)
-        pcall(function() SearchBox:CaptureFocus() end)
-    end)
-    searchOpen = true
-end
+-- подключаем событие изменения текста
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    filterOptions(SearchBox.Text)
+end)
 
--- Тоггл по лупе
+-- когда кликают по лупе — toggle
 SearchBtn.Activated:Connect(function()
     if searchOpen then
         closeSearch()
@@ -2409,42 +2463,27 @@ SearchBtn.Activated:Connect(function()
     end
 end)
 
--- Показываем/скрываем кнопку-лупу вместе с открытием дропдауна
+-- показываем/скрываем кнопку-лупу одновременно с открытием дропдауна
 NoClickFrame:GetPropertyChangedSignal("Visible"):Connect(function()
-    SearchBtn.Visible = NoClickFrame.Visible
-    if not NoClickFrame.Visible then
-        -- если дропдаун закрылся — свернуть поиск
+    local vis = NoClickFrame.Visible
+    SearchBtn.Visible = vis
+    if not vis then
+        -- если закрыли дропдаун — свернуть поиск
         closeSearch()
+    else
+        -- обновим позицию на случай, если окно двигалось
+        task.defer(updateFloatingPos)
     end
 end)
 
--- Функция фильтрации: прячет/показывает опции в ScrollFrame по тексту
-local function filterOptions(query)
-    query = tostring(query or "")
-    local q = string.lower(query)
-    for _,child in ipairs(ScrollFrame:GetChildren()) do
-        if child.Name == "Option" then
-            local label = child:FindFirstChildWhichIsA("TextLabel")
-            local txt = ""
-            if label and label.Text then txt = label.Text end
-            local ok = (q == "") or (string.find(string.lower(txt), q, 1, true) ~= nil)
-            child.Visible = ok
-        end
-    end
-    -- пересчитываем размер дропдауна, учитывая видимые элементы
-    CalculateSize()
-end
+-- если кликнули вне (NoClickFrame закрывает дроп), сворачиваем поиск
+NoClickFrame.MouseButton1Click:Connect(function() closeSearch() end)
 
--- Привязка к изменению текста
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    filterOptions(SearchBox.Text)
+-- также обновим позицию сразу (на случай, если SelectedFrame уже есть)
+task.defer(function()
+    if SelectedFrame then updateFloatingPos() end
 end)
-
--- Закрываем поиск, если пользователь нажал вне (NoClickFrame already closes dropdown)
-NoClickFrame.MouseButton1Click:Connect(function()
-    closeSearch()
-end)
--- === end of search UI patch ===
+-- ======= end search patch =======
 
 
 			local ScrollSize, WaitClick = 5

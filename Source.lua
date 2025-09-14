@@ -2312,122 +2312,266 @@ end
 				})
 			}), "ScrollBar")
 
-				-- === Search button & box ===
+-- ======= Search button (вставить сразу после создания ScrollFrame, перед local ScrollSize, WaitClick = 5) =======
 local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-local SEARCH_H = 22
-local SEARCH_W = 140
-local MARGIN = 6
+local SEARCH_H = 26
+local SEARCH_W = 160
+local GAP = 6
+local TWEEN_TIME = 0.18
 
--- Кнопка-лупа (рядом с правым верхним углом DropFrame)
-local SearchBtn = Create("TextButton", DropFrame, {
-    Name = "SearchButton",
-    Size = UDim2.fromOffset(SEARCH_H, SEARCH_H),
-    Position = UDim2.new(1, -MARGIN, 0, MARGIN),
-    AnchorPoint = Vector2.new(1, 0),
-    BackgroundColor3 = Theme["Color Theme"],
-    BackgroundTransparency = 0,
-    AutoButtonColor = true,
-    Text = "🔍",
-    Font = Enum.Font.GothamBold,
-    TextSize = 16,
-    TextColor3 = Theme["Color Text"],
-    ZIndex = DropFrame.ZIndex + 2
-})
-Make("Corner", SearchBtn, UDim.new(0,6))
-SearchBtn.Visible = false
+-- убедимся, что есть ScreenGui в скоупе (в твоём коде ScreenGui уже используется)
+local guiParent = ScreenGui or (Button and Button.Parent) or (LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui"))
+if type(guiParent) ~= "Instance" then
+    warn("[SearchPatch] ScreenGui not found in scope; search UI cannot be created.")
+else
+    -- создаём кнопку с помощью твоего сниппета, но parent = guiParent (чтобы не быть внутри DropFrame)
+    local al = {} -- если у тебя есть какие-то элементы/темы для child-creation, можешь подставить их
+    local ao = y("TextButton","Search",guiParent,{ -- ты дал этот кусок: немного адаптирован родитель
+        Position = UDim2.new(1,5,0,5),
+        Size = UDim2.new(0,25,0,25),
+        AutomaticSize = Enum.AutomaticSize.X,
+        Active = true,
+        Elements = al,
+        Text = "",
+        ThemeTag = {
+            BackgroundTransparency = "BackgroundTransparency", -- позволь теме управлять прозрачностью
+        },
+        Childs = {
+            y("UIPadding",{
+                PaddingLeft = UDim.new(0,5),
+                PaddingRight = UDim.new(0,5),
+                PaddingBottom = UDim.new(0,5),
+                PaddingTop = UDim.new(0,5)
+            }),
+            y("UIListLayout",{
+                Padding = UDim.new(0,5),
+                FillDirection = Enum.FillDirection.Horizontal
+            }),
+            -- SearchBox будет создан как child, но после создания мы переместим его в guiParent для простого абсолютного позиционирования
+            y("TextBox","SearchBox",{
+                Size = UDim2.fromScale(0,1),
+                Position = UDim2.fromScale(0.5,0.5),
+                AnchorPoint = Vector2.new(0.5,0.5),
+                Visible = false,
+                PlaceholderText = "Search...",
+                ClearTextOnFocus = false,
+                Text = "",
+                Elements = {
+                    Corner = UDim.new(0,6)
+                },
+                ThemeTag = {
+                    BackgroundColor3 = "Colors.Stroke",         -- серый/граница в стиле темы
+                    TextColor3 = "Colors.Text.Default",
+                    Font = "Font.ExtraBold"
+                }
+            }),
+            y("ImageLabel","SearchIcon",{
+                Size = UDim2.fromScale(1,1),
+                SizeConstraint = Enum.SizeConstraint.RelativeYY,
+                Position = UDim2.fromScale(0.5,0.5),
+                AnchorPoint = Vector2.new(0.5,0.5),
+                BackgroundTransparency = 1,
+                ThemeTag = {
+                    BackgroundColor3 = "Colors.Stroke",
+                    ImageColor3 = "Colors.Text.Default", -- делаем иконку "монохромной" (используем текстовую/нейтральную цветовую метку)
+                    Image = "Icons.Search"
+                }
+            })
+        }
+    })
 
--- Текстбокс (спрятан, появится при нажатии)
-local SearchBox = Create("TextBox", DropFrame, {
-    Name = "SearchBox",
-    Size = UDim2.fromOffset(0, SEARCH_H),
-    Position = UDim2.new(1, -(SEARCH_H + MARGIN*2), 0, MARGIN),
-    AnchorPoint = Vector2.new(1,0),
-    BackgroundColor3 = Color3.fromRGB(40,40,40), -- нейтрально-серый в стиле дропа
-    BackgroundTransparency = 0,
-    Text = "",
-    PlaceholderText = "search...",
-    PlaceholderColor3 = Theme["Color Text"],
-    Font = Enum.Font.Gotham,
-    TextSize = 14,
-    TextColor3 = Theme["Color Text"],
-    ClearTextOnFocus = false,
-    ZIndex = DropFrame.ZIndex + 1
-})
-Make("Corner", SearchBox, UDim.new(0,6))
-SearchBox.Visible = false
+    -- получаем созданные элементы
+    local searchBtn = ao -- кнопка-обёртка (TextButton)
+    local searchBox = ao:FindFirstChild("SearchBox", true)
+    local searchIcon = ao:FindFirstChild("SearchIcon", true)
 
-local searchOpen = false
+    -- Переместим SearchBox в guiParent (чтобы абсолютное позиционирование было простым)
+    if searchBox then
+        searchBox.Parent = guiParent
+        searchBox.AnchorPoint = Vector2.new(0, 0.5)
+        searchBox.Size = UDim2.fromOffset(0, SEARCH_H)
+        searchBox.Visible = false
+    end
 
--- tween helper
-local function tween(obj, props, dur)
-    local t = TweenService:Create(obj, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
-    t:Play()
-end
+    -- SearchBtn тоже поместим поверх guiParent (он уже там), настроим anchor/вид
+    if searchBtn then
+        searchBtn.AnchorPoint = Vector2.new(0, 0.5) -- будем позиционировать по левому центру при абсолютном позиционировании
+        searchBtn.Size = UDim2.fromOffset(SEARCH_H, SEARCH_H)
+        searchBtn.AutoButtonColor = true
+        searchBtn.BackgroundColor3 = Theme["Color Theme"] or searchBtn.BackgroundColor3
+        searchBtn.Text = "" -- только иконка
+        searchBtn.Visible = false
+        -- если иконка есть — принудительно установим цвет (монохром)
+        if searchIcon and searchIcon:IsA("ImageLabel") then
+            pcall(function()
+                local mono = Theme["Color Text"] or Theme["Colors"] and Theme["Colors"].Text or Color3.fromRGB(230,230,230)
+                searchIcon.ImageColor3 = mono
+            end)
+        end
+    end
 
--- Открытие поиска
-local function openSearch()
-    if searchOpen then return end
-    searchOpen = true
-    SearchBox.Visible = true
-    -- отъезд кнопки вправо
-    tween(SearchBtn, {Position = UDim2.new(1, -(MARGIN + SEARCH_W + 4), 0, MARGIN)}, 0.2)
-    -- разворот бокса
-    tween(SearchBox, {Size = UDim2.fromOffset(SEARCH_W, SEARCH_H)}, 0.2)
-    task.delay(0.22, function()
-        pcall(function() SearchBox:CaptureFocus() end)
+    -- хелперы для позиционирования рядом с SelectedFrame (рядом, не в DropFrame)
+    local function getTargetPos()
+        if not SelectedFrame or not SelectedFrame:IsDescendantOf(game) then
+            return nil
+        end
+        local ap = SelectedFrame.AbsolutePosition
+        local asz = SelectedFrame.AbsoluteSize
+        -- кнопка появится рядом справа от SelectedFrame (с отступом)
+        local bx = ap.X + asz.X + GAP
+        local by = ap.Y + (asz.Y/2)
+        return bx, by
+    end
+
+    -- анимация (TweenService)
+    local function tweenProp(inst, props, time)
+        local info = TweenInfo.new(time or TWEEN_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tw = TweenService:Create(inst, info, props)
+        tw:Play()
+        return tw
+    end
+
+    local open = false
+    local function openSearch()
+        if open then return end
+        open = true
+        -- позиционируем сначала (на случай динамики)
+        local bx, by = getTargetPos()
+        if not bx then return end
+
+        -- стартовая позиция кнопки (рядом с SelectedFrame)
+        local startX = bx
+        local startY = by
+
+        -- финальная позиция кнопки (отъезжает влево на ширину бокса)
+        local finalBtnX = startX - (SEARCH_W + 8)
+        local finalBtnY = startY
+
+        -- позиция поля (справа от кнопки в финале)
+        local fieldX = finalBtnX + SEARCH_H + 8
+        local fieldY = finalBtnY
+
+        -- показываем
+        searchBtn.Position = UDim2.fromOffset(startX, startY)
+        searchBtn.Visible = true
+
+        searchBox.Position = UDim2.fromOffset(fieldX, fieldY)
+        searchBox.Visible = true
+        searchBox.Text = ""
+
+        -- анимируем: переместим кнопку влево, развернём поле справа
+        tweenProp(searchBtn, {Position = UDim2.fromOffset(finalBtnX, finalBtnY)}, TWEEN_TIME)
+        tweenProp(searchBox, {Size = UDim2.fromOffset(SEARCH_W, SEARCH_H)}, TWEEN_TIME)
+        -- поставить фокус чуть позже
+        task.delay(TWEEN_TIME + 0.02, function()
+            pcall(function() searchBox:CaptureFocus() end)
+        end)
+    end
+
+    local function closeSearch()
+        if not open then return end
+        open = false
+        local bx, by = getTargetPos()
+        if not bx then
+            -- просто свернём
+            tweenProp(searchBox, {Size = UDim2.fromOffset(0, SEARCH_H)}, TWEEN_TIME)
+            task.delay(TWEEN_TIME + 0.02, function()
+                if searchBox then searchBox.Visible = false end
+                if searchBtn then searchBtn.Visible = false end
+            end)
+            return
+        end
+
+        local startX = bx
+        local startY = by
+        -- вернём кнопку на старт
+        tweenProp(searchBtn, {Position = UDim2.fromOffset(startX, startY)}, TWEEN_TIME)
+        tweenProp(searchBox, {Size = UDim2.fromOffset(0, SEARCH_H)}, TWEEN_TIME)
+        task.delay(TWEEN_TIME + 0.02, function()
+            if searchBox then
+                searchBox.Visible = false
+                searchBox.Text = ""
+            end
+            -- можно спрятать кнопку при желании (оставим видимой пока дроп открыт)
+        end)
+
+        -- сброс фильтра: показываем все опции
+        for _,child in ipairs(ScrollFrame:GetChildren()) do
+            if child.Name == "Option" or child:IsA("Frame") then
+                child.Visible = true
+            end
+        end
+        CalculateSize()
+    end
+
+    -- меняем позицию SearchBtn каждый раз, как двигается SelectedFrame
+    if SelectedFrame then
+        SelectedFrame:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+            local bx,by = getTargetPos()
+            if bx and searchBtn and searchBtn.Visible and not open then
+                searchBtn.Position = UDim2.fromOffset(bx, by)
+            end
+            if bx and searchBox and searchBox.Visible and open then
+                -- поправим поле и кнопку в открытом состоянии
+                local finalBtnX = bx - (SEARCH_W + 8)
+                local fieldX = finalBtnX + SEARCH_H + 8
+                searchBtn.Position = UDim2.fromOffset(finalBtnX, by)
+                searchBox.Position = UDim2.fromOffset(fieldX, by)
+            end
+        end)
+    end
+
+    -- показываем/скрываем кнопку вместе с открытием дропдауна
+    NoClickFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+        if NoClickFrame.Visible then
+            -- позиционируем и показываем кнопку
+            local bx,by = getTargetPos()
+            if bx then
+                searchBtn.Position = UDim2.fromOffset(bx,by)
+                searchBtn.Visible = true
+            end
+        else
+            closeSearch()
+            if searchBtn then searchBtn.Visible = false end
+        end
     end)
-end
 
--- Закрытие поиска
-local function closeSearch()
-    if not searchOpen then return end
-    searchOpen = false
-    SearchBox.Text = ""
-    tween(SearchBtn, {Position = UDim2.new(1, -MARGIN, 0, MARGIN)}, 0.2)
-    tween(SearchBox, {Size = UDim2.fromOffset(0, SEARCH_H)}, 0.2)
-    task.delay(0.22, function() SearchBox.Visible = false end)
-    -- сброс фильтра
-    for _,child in ipairs(ScrollFrame:GetChildren()) do
-        if child.Name == "Option" then
-            child.Visible = true
+    -- клик по кнопке переключает
+    searchBtn.Activated:Connect(function()
+        if open then closeSearch() else openSearch() end
+    end)
+
+    -- фильтрация опций при вводе
+    if searchBox then
+        -- помогалка: рекурсивно найти TextLabel в опции
+        local function findLabel(node)
+            if not node then return nil end
+            if node:IsA("TextLabel") then return node end
+            for _,c in ipairs(node:GetChildren()) do
+                local f = findLabel(c)
+                if f then return f end
+            end
+            return nil
         end
+
+        searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+            local q = tostring(searchBox.Text or ""):lower()
+            for _,child in ipairs(ScrollFrame:GetChildren()) do
+                if child.Name == "Option" or child:IsA("Frame") then
+                    local lab = findLabel(child)
+                    local txt = (lab and lab.Text) or ""
+                    child.Visible = (q == "" or string.find(txt:lower(), q, 1, true) ~= nil)
+                end
+            end
+            -- пересчитываем высоту видимого списка
+            CalculateSize()
+        end)
     end
-    CalculateSize()
 end
-
--- Тоггл по кнопке
-SearchBtn.MouseButton1Click:Connect(function()
-    if searchOpen then closeSearch() else openSearch() end
-end)
-
--- Показываем кнопку только при открытом дропдауне
-NoClickFrame:GetPropertyChangedSignal("Visible"):Connect(function()
-    local vis = NoClickFrame.Visible
-    SearchBtn.Visible = vis
-    if not vis then
-        closeSearch()
-    end
-end)
-
--- Фильтрация
-local function filterOptions(q)
-    q = string.lower(q or "")
-    for _,child in ipairs(ScrollFrame:GetChildren()) do
-        if child.Name == "Option" then
-            local label = child:FindFirstChildWhichIsA("TextLabel", true)
-            local txt = label and label.Text or ""
-            child.Visible = (q == "" or string.find(string.lower(txt), q, 1, true))
-        end
-    end
-    CalculateSize()
-end
-
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    filterOptions(SearchBox.Text)
-end)
--- === end search ===
-
+-- ======= end search patch =======
 
 
 			local ScrollSize, WaitClick = 5

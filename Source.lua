@@ -2282,6 +2282,7 @@ end
 			end
 			return Toggle
 		end
+			
 		function Tab:AddDropdown(Configs)
 			local DName = Configs[1] or Configs.Name or Configs.Title or "Dropdown"
 			local DDesc = Configs.Desc or Configs.Description or ""
@@ -2416,7 +2417,63 @@ end
 				DropFrame.AnchorPoint = Vector2.new(0, AnchorPoint)
 				CreateTween({DropFrame, "Position", NewPos, 0.1})
 			end
-			
+
+				
+local SearchButton = Create("ImageButton", SelectedFrame, {
+    Size = UDim2.fromOffset(15, 15),
+    Position = UDim2.new(1, -25, 0.5),
+    AnchorPoint = Vector2.new(1, 0.5),
+    Image = "rbxassetid://10709790802", 
+    BackgroundTransparency = 1,
+    Visible = true
+})
+
+
+local SearchBox = Create("TextBox", DropFrame, {
+    Size = UDim2.new(1, -10, 0, 20),
+    Position = UDim2.new(0, 5, 0, 5),
+    PlaceholderText = "Search...",
+    Text = "",
+    Font = Enum.Font.Gotham,
+    TextSize = 14,
+    TextColor3 = Theme["Color Text"],
+    BackgroundTransparency = 0.2,
+    Visible = false
+}) 
+Make("Corner", SearchBox, UDim.new(0, 4))
+
+
+ScrollFrame.Position = UDim2.new(0, 0, 0, 30)
+ScrollFrame.Size = UDim2.new(1, 0, 1, -30)
+
+local function ApplySearch(query)
+    query = string.lower(query)
+    for _, child in ipairs(ScrollFrame:GetChildren()) do
+        if child:IsA("Frame") or child.Name == "Option" then
+            local label = child:FindFirstChildOfClass("TextLabel")
+            if label then
+                child.Visible = query == "" or string.find(string.lower(label.Text), query, 1, true)
+            end
+        end
+    end
+end
+
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    ApplySearch(SearchBox.Text)
+end)
+
+
+SearchButton.MouseButton1Click:Connect(function()
+    SearchBox.Visible = not SearchBox.Visible
+    if SearchBox.Visible then
+        SearchBox:CaptureFocus()
+    else
+        SearchBox.Text = ""
+        ApplySearch("")
+    end
+end)
+
 			local AddNewOptions, GetOptions, AddOption, RemoveOption, Selected do
 				local Default = type(OpDefault) ~= "table" and {OpDefault} or OpDefault
 				local MultiSelect = DMultiSelect

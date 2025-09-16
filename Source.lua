@@ -2619,69 +2619,7 @@ end
 				end
 			end
 
-				local function RefreshDropdown(list)
-        for _, v in ipairs(ScrollFrame:GetChildren()) do
-            if v:IsA("TextButton") then v:Destroy() end
-        end
-
-        for _, option in ipairs(list) do
-            local Button = InsertTheme(Create("TextButton", ScrollFrame, {
-                Text = option,
-                Font = Enum.Font.Gotham,
-                TextSize = 14,
-                TextColor3 = Theme["Color Text"],
-                BackgroundTransparency = 0.2,
-                Size = UDim2.new(1, -10, 0, 25),
-                Position = UDim2.new(0, 5, 0, 0)
-            }), "DarkText")
-            Make("Corner", Button, UDim.new(0, 4))
-
-            Button.MouseButton1Click:Connect(function()
-                TitleLabel.Text = Title .. ": " .. option
-                Callback(option)
-                DropFrame.Visible = false
-            end)
-        end
-        ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIList.AbsoluteContentSize.Y)
-    end
-
-    RefreshDropdown(List)
-
-    -- открытие/закрытие
-    DropdownFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            DropFrame.Visible = not DropFrame.Visible
-        end
-    end)
-
-    -- анимация поиска
-    local SearchOpen = false
-    SearchButton.MouseButton1Click:Connect(function()
-        SearchOpen = not SearchOpen
-        if SearchOpen then
-            SearchBox.Visible = true
-            CreateTween({SearchBox, "Size", UDim2.new(0, 100, 0, 20), 0.25})
-            SearchBox:CaptureFocus()
-        else
-            CreateTween({SearchBox, "Size", UDim2.fromOffset(0, 20), 0.25})
-            task.delay(0.25, function() SearchBox.Visible = false end)
-            SearchBox.Text = ""
-            RefreshDropdown(List)
-        end
-    end)
-
-    -- фильтрация
-    SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        local query = string.lower(SearchBox.Text)
-        local filtered = {}
-        for _, option in ipairs(List) do
-            if query == "" or string.find(string.lower(option), query, 1, true) then
-                table.insert(filtered, option)
-            end
-        end
-        RefreshDropdown(filtered)
-    end)
-end
+			
 			function Dropdown:Set(Val1, Clear)
 				if type(Val1) == "table" then
 					AddNewOptions(Val1, not Clear)

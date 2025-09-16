@@ -1738,7 +1738,50 @@ end
         end
     end
 
-    function Window:Notify(Configs)
+    local NOTIF_W, NOTIF_H, SPACING = 280, 60, 10
+local TOTAL_H = NOTIF_H + SPACING
+local ActiveNotifications = {}
+
+local NotificationsHolder = ScreenGui:FindFirstChild("NotificationsHolder")
+if not NotificationsHolder then
+    NotificationsHolder = Create("Frame", ScreenGui, {
+        Name = "NotificationsHolder",
+        AnchorPoint = Vector2.new(1, 1),
+        Position = UDim2.new(1, -10, 1, -10),
+        Size = UDim2.new(0, 300, 1, -20),
+        BackgroundTransparency = 1,
+        ClipsDescendants = false
+    })
+end
+
+local function updatePositions()
+    for i, v in ipairs(ActiveNotifications) do
+        local y = -(i - 1) * TOTAL_H
+        CreateTween({v, "Position", UDim2.new(1, -10, 1, y), 0.25})
+    end
+end
+
+-- helper: format seconds -> "1h 2m 3s" / "2m 10s" / "45s"
+local function formatTimeSeconds(totalSeconds)
+    totalSeconds = math.max(0, math.floor(totalSeconds + 0.0001))
+    local hours = math.floor(totalSeconds / 3600)
+    local minutes = math.floor((totalSeconds % 3600) / 60)
+    local seconds = totalSeconds % 60
+
+    if hours > 0 then
+        if minutes > 0 then
+            return string.format("%dh %dm %ds", hours, minutes, seconds)
+        else
+            return string.format("%dh %dm %ds", hours, minutes, seconds) -- keep same if minutes 0
+        end
+    elseif minutes > 0 then
+        return string.format("%dm %ds", minutes, seconds)
+    else
+        return string.format("%ds", seconds)
+    end
+end
+
+function Window:Notify(Configs)
     local Title = Configs.Title or "Notification"
     local Content = Configs.Content or "This is a Notification"
     local Image = Configs.Image or ""
@@ -1746,7 +1789,7 @@ end
 
     local Notif = InsertTheme(Create("Frame", NotificationsHolder, {
         Size = UDim2.fromOffset(NOTIF_W, NOTIF_H),
-        Position = UDim2.new(1, 300, 1, 0), 
+        Position = UDim2.new(1, 300, 1, 0),
         BackgroundTransparency = 0.1,
         BackgroundColor3 = Theme["Color Hub 2"],
         BorderSizePixel = 0
@@ -1785,15 +1828,15 @@ end
         TextXAlignment = Enum.TextXAlignment.Left
     }), "DarkText")
 
-    
+    -- << ПРАВКА 1: сдвинул таймер чуть левее (не сильно) >>
     local TimerLabel = InsertTheme(Create("TextLabel", Notif, {
-        Text = tostring(Duration),
+        Text = formatTimeSeconds(Duration), -- << ПРАВКА 2: сразу форматируем в "1m 40s" и т.д. >>
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextColor3 = Theme["Color Dark Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(NOTIF_W - 50, 6),
-        Size = UDim2.fromOffset(36, 18),
+        Position = UDim2.fromOffset(NOTIF_W - 62, 6), -- чуть левее (было -50)
+        Size = UDim2.fromOffset(44, 18),
         TextXAlignment = Enum.TextXAlignment.Right
     }), "DarkText")
 
@@ -1801,28 +1844,32 @@ end
     table.insert(ActiveNotifications, 1, Notif)
     updatePositions()
 
-    
     local targetY = Notif.Position.Y.Offset
     CreateTween({Notif, "Position", UDim2.new(1, -10, 1, targetY), 0.40})
 
+    -- Обратный отчёт (обновляем каждую секунду и показываем в mm:ss/hh:mm:ss)
     task.spawn(function()
-        for t = Duration, 1, -1 do
+        local endTime = tick() + Duration
+        while true do
             if not TimerLabel or not TimerLabel.Parent then break end
-            pcall(function() TimerLabel.Text = tostring(t) end)
+            local remain = math.max(0, endTime - tick())
+            -- display formatted (minutes/seconds/hours)
+            local display = formatTimeSeconds(remain)
+            pcall(function() TimerLabel.Text = display end)
+            if remain <= 0 then break end
             task.wait(1)
         end
 
         if not Notif or not Notif.Parent then return end
 
-        
         CreateTween({Notif, "Transparency", 1, 0.35})
-     for _, child in ipairs(Notif:GetDescendants()) do
-        if child:IsA("TextLabel") then
-            CreateTween({child, "TextTransparency", 1, 0.35})
-        elseif child:IsA("ImageLabel") then
-            CreateTween({child, "ImageTransparency", 1, 0.35})
+        for _, child in ipairs(Notif:GetDescendants()) do
+            if child:IsA("TextLabel") then
+                CreateTween({child, "TextTransparency", 1, 0.35})
+            elseif child:IsA("ImageLabel") then
+                CreateTween({child, "ImageTransparency", 1, 0.35})
+            end
         end
-     end
         task.wait(0.35)
 
         local idx = table.find(ActiveNotifications, Notif)

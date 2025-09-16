@@ -1738,7 +1738,8 @@ end
         end
     end
 
-    local NOTIF_W, NOTIF_H, SPACING = 280, 60, 10
+		
+local NOTIF_W, NOTIF_H, SPACING = 280, 60, 10
 local TOTAL_H = NOTIF_H + SPACING
 local ActiveNotifications = {}
 
@@ -1761,7 +1762,6 @@ local function updatePositions()
     end
 end
 
--- helper: format seconds -> "1h 2m 3s" / "2m 10s" / "45s"
 local function formatTimeSeconds(totalSeconds)
     totalSeconds = math.max(0, math.floor(totalSeconds + 0.0001))
     local hours = math.floor(totalSeconds / 3600)
@@ -1828,14 +1828,13 @@ function Window:Notify(Configs)
         TextXAlignment = Enum.TextXAlignment.Left
     }), "DarkText")
 
-    -- << ПРАВКА 1: сдвинул таймер чуть левее (не сильно) >>
     local TimerLabel = InsertTheme(Create("TextLabel", Notif, {
         Text = formatTimeSeconds(Duration), -- << ПРАВКА 2: сразу форматируем в "1m 40s" и т.д. >>
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextColor3 = Theme["Color Dark Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(NOTIF_W - 62, 6), -- чуть левее (было -50)
+        Position = UDim2.fromOffset(NOTIF_W - 62, 6), 
         Size = UDim2.fromOffset(44, 18),
         TextXAlignment = Enum.TextXAlignment.Right
     }), "DarkText")
@@ -1847,13 +1846,13 @@ function Window:Notify(Configs)
     local targetY = Notif.Position.Y.Offset
     CreateTween({Notif, "Position", UDim2.new(1, -10, 1, targetY), 0.40})
 
-    -- Обратный отчёт (обновляем каждую секунду и показываем в mm:ss/hh:mm:ss)
+
     task.spawn(function()
         local endTime = tick() + Duration
         while true do
             if not TimerLabel or not TimerLabel.Parent then break end
             local remain = math.max(0, endTime - tick())
-            -- display formatted (minutes/seconds/hours)
+            
             local display = formatTimeSeconds(remain)
             pcall(function() TimerLabel.Text = display end)
             if remain <= 0 then break end

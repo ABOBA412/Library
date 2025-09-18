@@ -2251,7 +2251,8 @@ end
 		Position = UDim2.new(1, -10, 0.5),
 		AnchorPoint = Vector2.new(1, 0.5),
 		BackgroundColor3 = Theme["Color Stroke"]
-	}), "Stroke") Make("Corner", SelectedFrame, UDim.new(0, 4))
+	}), "Stroke")
+	Make("Corner", SelectedFrame, UDim.new(0, 4))
 
 	local ActiveLabel = InsertTheme(Create("TextLabel", SelectedFrame, {
 		Size = UDim2.new(0.85, 0, 0.85, 0),
@@ -2272,9 +2273,10 @@ end
 		BackgroundTransparency = 1
 	})
 
-	-- ===== ВСТАВЛЕНО: кнопка поиска + поле поиска в SelectedFrame (в стиле v5) =====
-	local SEARCH_ICON = "rbxassetid://10734953451" -- можно заменить на нужный asset id
+	-- ===== новый: кнопка лупы и поле поиска (в SelectedFrame) =====
+	local SEARCH_ICON = "rbxassetid://10734953451" -- можно поменять на нужный asset
 
+	-- кнопка лупы (внутри SelectedFrame, справа)
 	local SearchButton = InsertTheme(Create("ImageButton", SelectedFrame, {
 		Name = "SearchButton",
 		Size = UDim2.fromOffset(18, 18),
@@ -2283,28 +2285,29 @@ end
 		BackgroundTransparency = 0.15,
 		AutoButtonColor = true,
 		Image = SEARCH_ICON,
-		-- ImageColor3 будет обновляться через CreateTween при открытии/закрытии
+		ScaleType = Enum.ScaleType.Fit
 	}), "Stroke")
 	Make("Corner", SearchButton, UDim.new(0, 5))
 
+	-- поле поиска (изначально скрытое, схлопнутое)
 	local SearchBox = InsertTheme(Create("TextBox", SelectedFrame, {
 		Name = "SearchBox",
 		Text = "",
 		PlaceholderText = "Search...",
 		Font = Enum.Font.Gotham,
-		TextSize = 14,
+		TextSize = 13,
 		TextColor3 = Theme["Color Text"],
 		BackgroundTransparency = 0.15,
-		Size = UDim2.fromOffset(0, 18), -- схлопнуто
+		Size = UDim2.fromOffset(0, 18),
 		Position = UDim2.new(1, -55, 0.5, 0),
 		AnchorPoint = Vector2.new(1, 0.5),
 		Visible = false,
-		ClearTextOnFocus = false
+		ClearTextOnFocus = false,
+		TextXAlignment = Enum.TextXAlignment.Left
 	}), "DarkText")
 	Make("Corner", SearchBox, UDim.new(0, 5))
-	-- Padding для текста внутри SearchBox
 	Create("UIPadding", SearchBox, { PaddingLeft = UDim.new(0, 6) })
-	-- ===========================================================================
+	-- ===================================================================
 
 	local NoClickFrame = Create("TextButton", DropdownHolder, {
 		Name = "AntiClick",
@@ -2322,7 +2325,10 @@ end
 		Name = "DropdownFrame",
 		ClipsDescendants = true,
 		Active = true
-	}) Make("Corner", DropFrame) Make("Stroke", DropFrame) Make("Gradient", DropFrame, { Rotation = 60 })
+	})
+	Make("Corner", DropFrame)
+	Make("Stroke", DropFrame)
+	Make("Gradient", DropFrame, { Rotation = 60 })
 
 	local ScrollFrame = InsertTheme(Create("ScrollingFrame", DropFrame, {
 		ScrollBarImageColor3 = Theme["Color Theme"],
@@ -2340,23 +2346,23 @@ end
 			PaddingRight = UDim.new(0, 8),
 			PaddingTop = UDim.new(0, 5),
 			PaddingBottom = UDim.new(0, 5)
-		}), Create("UIListLayout", {
+		}),
+		Create("UIListLayout", {
 			Padding = UDim.new(0, 4)
 		})
 	}), "ScrollBar")
 
-	-- переменные для размера
+	-- размер и подсчёт видимых опций
 	local ScrollSize, WaitClick = 5
-
 	local function GetFrameSize()
 		return UDim2.fromOffset(152, ScrollSize)
 	end
 
-	-- CalculateSize: учитываем только видимые опции
 	local function CalculateSize()
 		local Count = 0
-		for _,FrameChild in pairs(ScrollFrame:GetChildren()) do
-			if (FrameChild:IsA("Frame") or FrameChild.Name == "Option" or FrameChild:IsA("TextButton")) and FrameChild.Visible ~= false then
+		for _, FrameChild in pairs(ScrollFrame:GetChildren()) do
+			-- считаем только видимые опции
+			if (FrameChild.Name == "Option" or FrameChild:IsA("TextButton") or FrameChild:IsA("Frame")) and FrameChild.Visible ~= false then
 				Count = Count + 1
 			end
 		end
@@ -2364,7 +2370,8 @@ end
 		if NoClickFrame.Visible then
 			NoClickFrame.Visible = true
 			CreateTween({ DropFrame, "Size", GetFrameSize(), 0.2, true })
-			-- если поиск открыт — подстроить ширину поля
+
+			-- если поиск открыт — подстроим ширину поля
 			task.delay(0.22, function()
 				if SearchBox.Visible then
 					local ok, w = pcall(function() return SelectedFrame.AbsoluteSize.X end)
@@ -2385,14 +2392,19 @@ end
 		CreateTween({ Arrow, "ImageColor3", Color3.fromRGB(255, 255, 255), 0.2 })
 		Arrow.Image = "rbxassetid://10709791523"
 		NoClickFrame.Visible = false
-		-- закрыть поиск, если открыт
+
+		-- закрываем поиск, если открыт
 		pcall(function()
 			if SearchBox.Visible then
 				CreateTween({ SearchBox, "Size", UDim2.fromOffset(0, 18), 0.18 })
 				CreateTween({ SearchButton, "Position", UDim2.new(1, -30, 0.5, 0), 0.18 })
-				task.delay(0.18, function() SearchBox.Visible = false SearchBox.Text = "" end)
+				task.delay(0.18, function()
+					SearchBox.Visible = false
+					SearchBox.Text = ""
+				end)
 			end
 		end)
+
 		WaitClick = false
 	end
 
@@ -2404,12 +2416,16 @@ end
 			CreateTween({ Arrow, "ImageColor3", Color3.fromRGB(255, 255, 255), 0.2 })
 			CreateTween({ DropFrame, "Size", UDim2.new(0, 152, 0, 0), 0.2, true })
 			NoClickFrame.Visible = false
-			-- закрываем поиск если открыт
+
+			-- закрываем поиск, если открыт
 			pcall(function()
 				if SearchBox.Visible then
 					CreateTween({ SearchBox, "Size", UDim2.fromOffset(0, 18), 0.18 })
 					CreateTween({ SearchButton, "Position", UDim2.new(1, -30, 0.5, 0), 0.18 })
-					task.delay(0.18, function() SearchBox.Visible = false SearchBox.Text = "" end)
+					task.delay(0.18, function()
+						SearchBox.Visible = false
+						SearchBox.Text = ""
+					end)
 				end
 			end)
 		else
@@ -2417,6 +2433,7 @@ end
 			Arrow.Image = "rbxassetid://10709790948"
 			CreateTween({ Arrow, "ImageColor3", Theme["Color Theme"], 0.2 })
 			CreateTween({ DropFrame, "Size", GetFrameSize(), 0.2, true })
+
 			task.delay(0.22, function()
 				if SearchBox.Visible then
 					local ok, w = pcall(function() return SelectedFrame.AbsoluteSize.X end)
@@ -2443,7 +2460,7 @@ end
 		CreateTween({ DropFrame, "Position", NewPos, 0.1 })
 	end
 
-	-- ===== Блок опций (логика осталась как в оригинале) =====
+	-- ========== блок опций (как у тебя было) ==========
 	local AddNewOptions, GetOptions, AddOption, RemoveOption, Selected do
 		local Default = type(OpDefault) ~= "table" and { OpDefault } or OpDefault
 		local MultiSelect = DMultiSelect
@@ -2538,7 +2555,8 @@ end
 				Size = UDim2.new(1, 0, 0, 21),
 				Position = UDim2.new(0, 0, 0.5),
 				AnchorPoint = Vector2.new(0, 0.5)
-			}) Make("Corner", ButtonOpt, UDim.new(0, 4))
+			})
+			Make("Corner", ButtonOpt, UDim.new(0, 4))
 
 			local IsSelected = InsertTheme(Create("Frame", ButtonOpt, {
 				Position = UDim2.new(0, 1, 0.5),
@@ -2546,7 +2564,8 @@ end
 				BackgroundColor3 = Theme["Color Theme"],
 				BackgroundTransparency = 1,
 				AnchorPoint = Vector2.new(0, 0.5)
-			}), "Theme") Make("Corner", IsSelected, UDim.new(0.5, 0))
+			}), "Theme")
+			Make("Corner", IsSelected, UDim.new(0.5, 0))
 
 			local OptioneName = InsertTheme(Create("TextLabel", ButtonOpt, {
 				Size = UDim2.new(1, 0, 1),
@@ -2607,7 +2626,7 @@ end
 	CalculatePos()
 	CalculateSize()
 
-	-- ===== ЛОГИКА ПОИСКА: переключение и фильтрация (интегрировано в v5) =====
+	-- ===== логика поиска: переключение + фильтрация =====
 	local SearchOpened = false
 
 	local function CloseSearch()
@@ -2647,8 +2666,12 @@ end
 	local function ApplySearch(q)
 		q = tostring(q or ""):lower()
 		for _, child in ipairs(ScrollFrame:GetChildren()) do
-			if child:IsA("TextButton") or child:IsA("Frame") or child.Name == "Option" then
-				local lbl = child:FindFirstChildOfClass("TextLabel")
+			-- опции могут быть TextButton / Frame / Button; ищем текст внутри
+			if (child.Name == "Option" or child:IsA("TextButton") or child:IsA("Frame")) then
+				local lbl
+				for _,c in ipairs(child:GetChildren()) do
+					if c:IsA("TextLabel") then lbl = c break end
+				end
 				if lbl and lbl.Text then
 					local ok = (q == "") or (string.find(string.lower(lbl.Text), q, 1, true) ~= nil)
 					pcall(function() child.Visible = ok end)
@@ -2663,12 +2686,12 @@ end
 	end)
 
 	SearchBox.FocusLost:Connect(function(enter)
-		-- если потеря фокуса без Enter — скрываем поиск
+		-- потеря фокуса без Enter — скрываем
 		if not enter then
 			CloseSearch()
 		end
 	end)
-	-- =======================================================================
+	-- ===================================================================
 
 	local Dropdown = {}
 	function Dropdown:Visible(...) Funcs:ToggleVisible(Button, ...) end
@@ -2718,6 +2741,7 @@ end
 	end
 	return Dropdown
 end
+
 
 		function Tab:AddSlider(Configs)
 			local SName = Configs[1] or Configs.Name or Configs.Title or "Slider!"

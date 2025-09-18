@@ -2271,7 +2271,46 @@ end
 				Image = "rbxassetid://10709791523",
 				BackgroundTransparency = 1
 			})
-			
+
+			-- Кнопка лупы (рядом со стрелкой)
+local SearchButton = Create("ImageButton", DropdownFrame, {
+    Image = "rbxassetid://10709790802", -- иконка 🔍
+    Size = UDim2.fromOffset(18, 18),
+    Position = UDim2.new(1, -50, 0.5, 0),
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    BackgroundTransparency = 0.1,
+    AutoButtonColor = true
+})
+Make("Corner", SearchButton, UDim.new(0, 4))
+
+-- Поле поиска (по умолчанию скрытое)
+local SearchBox = InsertTheme(Create("TextBox", DropdownFrame, {
+    PlaceholderText = "Search...",
+    Text = "",
+    Font = Enum.Font.Gotham,
+    TextSize = 14,
+    TextColor3 = Theme["Color Text"],
+    BackgroundTransparency = 0.1,
+    Size = UDim2.fromOffset(0, 20), -- изначально схлопнуто
+    Position = UDim2.new(1, -50, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Visible = false,
+    ClipsDescendants = true
+}), "Hub2")
+Make("Corner", SearchBox, UDim.new(0, 6))
+
+				-- Фильтрация списка
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local query = string.lower(SearchBox.Text)
+    local filtered = {}
+    for _, option in ipairs(List) do
+        if query == "" or string.find(string.lower(option), query, 1, true) then
+            table.insert(filtered, option)
+        end
+    end
+    RefreshDropdown(filtered)
+end)
+
 			local NoClickFrame = Create("TextButton", DropdownHolder, {
 				Name = "AntiClick",
 				Size = UDim2.new(1, 0, 1, 0),
@@ -2356,7 +2395,23 @@ end
 				end
 				WaitClick = false
 			end
-			
+
+				-- Управление поиском
+local SearchOpen = false
+SearchButton.MouseButton1Click:Connect(function()
+    SearchOpen = not SearchOpen
+    if SearchOpen then
+        SearchBox.Visible = true
+        CreateTween({SearchBox, "Size", UDim2.new(0, 100, 0, 20), 0.25})
+        SearchBox:CaptureFocus()
+    else
+        CreateTween({SearchBox, "Size", UDim2.fromOffset(0, 20), 0.25})
+        task.delay(0.25, function() SearchBox.Visible = false end)
+        SearchBox.Text = ""
+        RefreshDropdown(List)
+    end
+end)
+
 			local function CalculatePos()
 				local FramePos = SelectedFrame.AbsolutePosition
 				local ScreenSize = ScreenGui.AbsoluteSize

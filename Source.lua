@@ -2273,7 +2273,17 @@ end
 				BackgroundTransparency = 1
 			})
 
-				-- окно dropdown (DropFrame)
+
+
+			local NoClickFrame = Create("TextButton", DropdownHolder, {
+				Name = "AntiClick",
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				Visible = false,
+				Text = ""
+			})
+			
+			-- окно dropdown (DropFrame)
 local DropFrame = Create("Frame", NoClickFrame, {
     Size = UDim2.new(SelectedFrame.Size.X, 0, 0),
     BackgroundTransparency = 0.1,
@@ -2366,23 +2376,6 @@ SearchBox.FocusLost:Connect(function()
     if SearchBox.Text == "" then CloseSearch() end
 end)
 
-			local NoClickFrame = Create("TextButton", DropdownHolder, {
-				Name = "AntiClick",
-				Size = UDim2.new(1, 0, 1, 0),
-				BackgroundTransparency = 1,
-				Visible = false,
-				Text = ""
-			})
-			
-			local DropFrame = Create("Frame", NoClickFrame, {
-				Size = UDim2.new(SelectedFrame.Size.X, 0, 0),
-				BackgroundTransparency = 0.1,
-				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-				AnchorPoint = Vector2.new(0, 1),
-				Name = "DropdownFrame",
-				ClipsDescendants = true,
-				Active = true
-			})Make("Corner", DropFrame)Make("Stroke", DropFrame)Make("Gradient", DropFrame, {Rotation = 60})
 			
 			local ScrollFrame = InsertTheme(Create("ScrollingFrame", DropFrame, {
 				ScrollBarImageColor3 = Theme["Color Theme"],

@@ -115,7 +115,7 @@ local redzlib = {
 	Save = {
 		UISize = {550, 380},
 		TabSize = 160,
-		Theme = "Dark"
+		Theme = "Darker"
 	},
 	Settings = {},
 	Connection = {},
@@ -1013,7 +1013,7 @@ local SetProps, SetChildren, InsertTheme, Create do
 		end
 	end
 	
-	pcall(Save, "X Library.json")
+	pcall(Save, "redz library V5.json")
 end
 
 local Funcs = {} do
@@ -1155,7 +1155,7 @@ local GetFlag, SetFlag, CheckFlag do
 end
 
 local ScreenGui = Create("ScreenGui", CoreGui, {
-	Name = "X Library",
+	Name = "redz Library V5",
 }, {
 	Create("UIScale", {
 		Scale = UIScale,
@@ -1434,7 +1434,7 @@ function redzlib:SetTheme(NewTheme)
 	if not VerifyTheme(NewTheme) then return end
 	
 	redzlib.Save.Theme = NewTheme
-	SaveJson("X library.json", redzlib.Save)
+	SaveJson("redz library V5.json", redzlib.Save)
 	Theme = redzlib.Themes[NewTheme]
 	
 	Comnection:FireConnection("ThemeChanged", NewTheme)
@@ -1463,8 +1463,8 @@ function redzlib:SetScale(NewScale)
 end
 
 function redzlib:MakeWindow(Configs)
-	local WTitle = Configs[1] or Configs.Name or Configs.Title or "X hub"
-	local WMiniText = Configs[2] or Configs.SubTitle or "by X"
+	local WTitle = Configs[1] or Configs.Name or Configs.Title or "redz Library V5"
+	local WMiniText = Configs[2] or Configs.SubTitle or "by : redz9999"
 	
 	Settings.ScriptFile = Configs[3] or Configs.SaveFolder or false
 	
@@ -1604,7 +1604,7 @@ function redzlib:MakeWindow(Configs)
 	ConnectSave(ControlSize1, function()
 		if not Minimized then
 			redzlib.Save.UISize = {MainFrame.Size.X.Offset, MainFrame.Size.Y.Offset}
-			SaveJson("X Library.json", redzlib.Save)
+			SaveJson("redz library V5.json", redzlib.Save)
 		end
 	end)
 	
@@ -1643,7 +1643,7 @@ function redzlib:MakeWindow(Configs)
 	function Window:CloseBtn()
 		local Dialog = Window:Dialog({
 			Title = "Close",
-			Text = "You Want Close UI?",
+			Text = "You Want Close Ui?",
 			Options = {
 				{"Confirm", function()
 					ScreenGui:Destroy()
@@ -1713,10 +1713,9 @@ function redzlib:MakeWindow(Configs)
 		end
 	end
 
-
-local NOTIF_W, NOTIF_H, SPACING = 280, 60, 10
-local TOTAL_H = NOTIF_H + SPACING
-local ActiveNotifications = {}
+        local NOTIF_W, NOTIF_H, SPACING = 280, 60, 10
+        local TOTAL_H = NOTIF_H + SPACING
+        local ActiveNotifications = {}
 
 local NotificationsHolder = ScreenGui:FindFirstChild("NotificationsHolder")
 if not NotificationsHolder then
@@ -1738,50 +1737,7 @@ end
         end
     end
 
-		
-local NOTIF_W, NOTIF_H, SPACING = 280, 60, 10
-local TOTAL_H = NOTIF_H + SPACING
-local ActiveNotifications = {}
-
-local NotificationsHolder = ScreenGui:FindFirstChild("NotificationsHolder")
-if not NotificationsHolder then
-    NotificationsHolder = Create("Frame", ScreenGui, {
-        Name = "NotificationsHolder",
-        AnchorPoint = Vector2.new(1, 1),
-        Position = UDim2.new(1, -10, 1, -10),
-        Size = UDim2.new(0, 300, 1, -20),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false
-    })
-end
-
-local function updatePositions()
-    for i, v in ipairs(ActiveNotifications) do
-        local y = -(i - 1) * TOTAL_H
-        CreateTween({v, "Position", UDim2.new(1, -10, 1, y), 0.25})
-    end
-end
-
-local function formatTimeSeconds(totalSeconds)
-    totalSeconds = math.max(0, math.floor(totalSeconds + 0.0001))
-    local hours = math.floor(totalSeconds / 3600)
-    local minutes = math.floor((totalSeconds % 3600) / 60)
-    local seconds = totalSeconds % 60
-
-    if hours > 0 then
-        if minutes > 0 then
-            return string.format("%dh %dm %ds", hours, minutes, seconds)
-        else
-            return string.format("%dh %dm %ds", hours, minutes, seconds) -- keep same if minutes 0
-        end
-    elseif minutes > 0 then
-        return string.format("%dm %ds", minutes, seconds)
-    else
-        return string.format("%ds", seconds)
-    end
-end
-
-function Window:Notify(Configs)
+    function Window:Notify(Configs)
     local Title = Configs.Title or "Notification"
     local Content = Configs.Content or "This is a Notification"
     local Image = Configs.Image or ""
@@ -1789,7 +1745,7 @@ function Window:Notify(Configs)
 
     local Notif = InsertTheme(Create("Frame", NotificationsHolder, {
         Size = UDim2.fromOffset(NOTIF_W, NOTIF_H),
-        Position = UDim2.new(1, 300, 1, 0),
+        Position = UDim2.new(1, 300, 1, 0), 
         BackgroundTransparency = 0.1,
         BackgroundColor3 = Theme["Color Hub 2"],
         BorderSizePixel = 0
@@ -1828,14 +1784,15 @@ function Window:Notify(Configs)
         TextXAlignment = Enum.TextXAlignment.Left
     }), "DarkText")
 
+    
     local TimerLabel = InsertTheme(Create("TextLabel", Notif, {
-        Text = formatTimeSeconds(Duration), -- << ПРАВКА 2: сразу форматируем в "1m 40s" и т.д. >>
+        Text = tostring(Duration),
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextColor3 = Theme["Color Dark Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(NOTIF_W - 62, 6), 
-        Size = UDim2.fromOffset(44, 18),
+        Position = UDim2.fromOffset(NOTIF_W - 50, 6),
+        Size = UDim2.fromOffset(36, 18),
         TextXAlignment = Enum.TextXAlignment.Right
     }), "DarkText")
 
@@ -1843,32 +1800,28 @@ function Window:Notify(Configs)
     table.insert(ActiveNotifications, 1, Notif)
     updatePositions()
 
+    
     local targetY = Notif.Position.Y.Offset
     CreateTween({Notif, "Position", UDim2.new(1, -10, 1, targetY), 0.40})
 
-
     task.spawn(function()
-        local endTime = tick() + Duration
-        while true do
+        for t = Duration, 1, -1 do
             if not TimerLabel or not TimerLabel.Parent then break end
-            local remain = math.max(0, endTime - tick())
-            
-            local display = formatTimeSeconds(remain)
-            pcall(function() TimerLabel.Text = display end)
-            if remain <= 0 then break end
+            pcall(function() TimerLabel.Text = tostring(t) end)
             task.wait(1)
         end
 
         if not Notif or not Notif.Parent then return end
 
+        
         CreateTween({Notif, "Transparency", 1, 0.35})
-        for _, child in ipairs(Notif:GetDescendants()) do
-            if child:IsA("TextLabel") then
-                CreateTween({child, "TextTransparency", 1, 0.35})
-            elseif child:IsA("ImageLabel") then
-                CreateTween({child, "ImageTransparency", 1, 0.35})
-            end
+     for _, child in ipairs(Notif:GetDescendants()) do
+        if child:IsA("TextLabel") then
+            CreateTween({child, "TextTransparency", 1, 0.35})
+        elseif child:IsA("ImageLabel") then
+            CreateTween({child, "ImageTransparency", 1, 0.35})
         end
+     end
         task.wait(0.35)
 
         local idx = table.find(ActiveNotifications, Notif)
@@ -2282,7 +2235,6 @@ end
 			end
 			return Toggle
 		end
-			
 		function Tab:AddDropdown(Configs)
 			local DName = Configs[1] or Configs.Name or Configs.Title or "Dropdown"
 			local DDesc = Configs.Desc or Configs.Description or ""
@@ -2618,8 +2570,6 @@ end
 					end
 				end
 			end
-
-			
 			function Dropdown:Set(Val1, Clear)
 				if type(Val1) == "table" then
 					AddNewOptions(Val1, not Clear)

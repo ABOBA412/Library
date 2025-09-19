@@ -115,7 +115,7 @@ local redzlib = {
 	Save = {
 		UISize = {550, 380},
 		TabSize = 160,
-		Theme = "Darker"
+		Theme = "Red"
 	},
 	Settings = {},
 	Connection = {},
@@ -2247,6 +2247,7 @@ end
 
     local Button, LabelFunc = ButtonFrame(Container, DName, DDesc, UDim2.new(1, -180))
 
+    -- Selected row
     local SelectedFrame = InsertTheme(Create("Frame", Button, {
         Size = UDim2.new(0, 150, 0, 18),
         Position = UDim2.new(1, -10, 0.5),
@@ -2274,6 +2275,7 @@ end
         BackgroundTransparency = 1
     })
 
+    -- fullscreen anti-click holder (for closing dropdown on click outside)
     local NoClickFrame = Create("TextButton", DropdownHolder, {
         Name = "AntiClick",
         Size = UDim2.new(1, 0, 1, 0),
@@ -2282,6 +2284,7 @@ end
         Text = ""
     })
 
+    -- DropFrame (popup)
     local DropFrame = Create("Frame", NoClickFrame, {
         Size = UDim2.fromOffset(152, 0),
         BackgroundTransparency = 0.1,
@@ -2293,30 +2296,30 @@ end
     })
     Make("Corner", DropFrame) Make("Stroke", DropFrame) Make("Gradient", DropFrame, {Rotation = 60})
 
-    -- === SEARCH UI (рядом с окном) ===
+    -- === SEARCH UI (рядом со строкой — вне DropFrame) ===
+    local SEARCH_COLLAPSED_W = 20
+    local SEARCH_EXPANDED_W = 140
+    local SEARCH_H = 18
+    local SEARCH_GAP = 8
+
+    -- SearchHolder прикреплён к Button (рядом со строкой)
     local SearchHolder = InsertTheme(Create("Frame", Button, {
-        Size = UDim2.fromOffset(20, 20),
-        Position = UDim2.new(1, 24, 0, 0), -- справа от dropdown
-        AnchorPoint = Vector2.new(0, 0),
+        Size = UDim2.fromOffset(SEARCH_COLLAPSED_W, SEARCH_H),
+        Position = UDim2.new(1, SEARCH_GAP, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5), -- рост влево при расширении
         BackgroundColor3 = Theme["Color Hub 2"],
+        BackgroundTransparency = 0,
+        Name = "DropdownSearchHolder",
         ClipsDescendants = true
     }), "Hub2")
     Make("Corner", SearchHolder, UDim.new(0, 5))
     Make("Stroke", SearchHolder)
 
-    local SearchBtn = Create("ImageButton", SearchHolder, {
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        AutoButtonColor = false,
-        Image = (redzlib.Icons and redzlib.Icons["search"]) or "rbxassetid://10734943674"
-    })
-    SearchBtn.ImageColor3 = Theme["Color Text"]
-
+    -- SearchBox внутри SearchHolder (спрятан) — он "внутри" холдера, выезжает слева при расширении холдера
     local SearchBox = InsertTheme(Create("TextBox", SearchHolder, {
-        Size = UDim2.fromOffset(0, 20),
-        Position = UDim2.new(0, -4, 0, 0),
-        AnchorPoint = Vector2.new(1, 0),
-        BackgroundColor3 = Theme["Color Hub 2"],
+        Size = UDim2.new(1, - (SEARCH_COLLAPSED_W + 8), 1, 0),
+        Position = UDim2.new(0, 6, 0, 0),
+        BackgroundTransparency = 1,
         Text = "",
         PlaceholderText = "Search...",
         Font = Enum.Font.Gotham,
@@ -2324,13 +2327,27 @@ end
         TextColor3 = Theme["Color Text"],
         ClearTextOnFocus = false,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Visible = false
+        Visible = false,
+        Name = "SearchBox"
     }), "Text")
     Make("Corner", SearchBox, UDim.new(0, 5))
     Make("Stroke", SearchBox)
 
+    -- Search button (иконка) — всегда справа внутри SearchHolder
+    local SearchBtn = Create("ImageButton", SearchHolder, {
+        Size = UDim2.fromOffset(14, 14),
+        Position = UDim2.new(1, -4, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundTransparency = 1,
+        AutoButtonColor = false,
+        Image = (redzlib and redzlib.Icons and redzlib.Icons["search"]) or "rbxassetid://10734943674",
+        Name = "SearchBtn"
+    })
+    SearchBtn.ImageColor3 = Theme["Color Text"]
+
     local SearchOpen = false
 
+    -- === ScrollFrame for options (inside DropFrame) ===
     local ScrollFrame = InsertTheme(Create("ScrollingFrame", DropFrame, {
         ScrollBarImageColor3 = Theme["Color Theme"],
         Size = UDim2.new(1, 0, 1, 0),
@@ -2353,42 +2370,86 @@ end
         })
     }), "ScrollBar")
 
-    -- === SEARCH TOGGLE LOGIC ===
-    SearchBtn.MouseButton1Click:Connect(function()
-        if SearchOpen then
-            SearchOpen = false
-            SearchBox.Visible = false
-            CreateTween({SearchHolder, "Position", UDim2.new(1, 24, 0, 0), 0.25})
-            CreateTween({SearchHolder, "Size", UDim2.fromOffset(20, 20), 0.25})
-        else
-            SearchOpen = true
-            SearchBox.Visible = true
-            CreateTween({SearchHolder, "Position", UDim2.new(1, 144, 0, 0), 0.25})
-            CreateTween({SearchHolder, "Size", UDim2.fromOffset(140, 20), 0.25})
-            task.delay(0.25, function()
-                if SearchBox and SearchBox.Parent then
-                    SearchBox:CaptureFocus()
-                end
-            end)
-        end
-    end)
+    -- state
+    local Options = {}
+    local ScrollSize, WaitClick = 5, false
 
-    SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        local q = SearchBox.Text:lower()
-        for _, opt in pairs(ScrollFrame:GetChildren()) do
-            if opt:IsA("TextButton") or opt.Name == "Option" then
-                local lbl = opt:FindFirstChildWhichIsA("TextLabel")
-                if lbl then
-                    opt.Visible = (q == "" or lbl.Text:lower():find(q, 1, true))
-                end
+    -- helper: calculate size by visible options
+    local function CalculateSize()
+        local Count = 0
+        for _, child in pairs(ScrollFrame:GetChildren()) do
+            if (child:IsA("Frame") or child.Name == "Option") and child.Visible then
+                Count = Count + 1
             end
         end
-    end)
+        ScrollSize = (math.clamp(Count, 0, 10) * 25) + 10
+        if NoClickFrame.Visible then
+            CreateTween({DropFrame, "Size", UDim2.fromOffset(152, ScrollSize), 0.2, true})
+        end
+    end
 
-    -- === Дальше стандартная логика старого дропдауна (опции, выбор, callback) ===
-    local Options = {}
+    local function GetFrameSize()
+        return UDim2.fromOffset(152, ScrollSize)
+    end
+
+    local function CalculatePos()
+        local FramePos = SelectedFrame.AbsolutePosition
+        local ScreenSize = ScreenGui.AbsoluteSize
+        local ClampX = math.clamp((FramePos.X / UIScale), 0, ScreenSize.X / UIScale - DropFrame.Size.X.Offset)
+        local ClampY = math.clamp((FramePos.Y / UIScale), 0, ScreenSize.Y / UIScale)
+
+        local NewPos = UDim2.fromOffset(ClampX, ClampY)
+        local AnchorPoint = FramePos.Y > ScreenSize.Y / 1.4 and 1 or ScrollSize > 80 and 0.5 or 0
+        DropFrame.AnchorPoint = Vector2.new(0, AnchorPoint)
+        CreateTween({DropFrame, "Position", NewPos, 0.1})
+    end
+
+    local function Disable()
+        WaitClick = true
+        CreateTween({Arrow, "Rotation", 0, 0.2})
+        CreateTween({DropFrame, "Size", UDim2.new(0, 152, 0, 0), 0.2, true})
+        CreateTween({Arrow, "ImageColor3", Color3.fromRGB(255, 255, 255), 0.2})
+        Arrow.Image = "rbxassetid://10709791523"
+        NoClickFrame.Visible = false
+
+        -- close search if open
+        if SearchOpen then
+            SearchOpen = false
+            -- collapse visually
+            CreateTween({SearchHolder, "Size", UDim2.fromOffset(SEARCH_COLLAPSED_W, SEARCH_H), 0.18})
+            task.delay(0.18, function()
+                if SearchBox and SearchBox.Parent then
+                    SearchBox.Visible = false
+                    SearchBox.Text = ""
+                end
+            end)
+            CreateTween({SearchBtn, "ImageColor3", Theme["Color Text"], 0.18})
+            -- restore visibility of all options
+            for _, opt in pairs(Options) do
+                if opt and opt.nodes and opt.nodes[1] then opt.nodes[1].Visible = true end
+            end
+        end
+
+        WaitClick = false
+    end
+
+    local function Minimize()
+        if WaitClick then return end
+        WaitClick = true
+        if NoClickFrame.Visible then
+            Disable()
+        else
+            NoClickFrame.Visible = true
+            Arrow.Image = "rbxassetid://10709790948"
+            CreateTween({Arrow, "ImageColor3", Theme["Color Theme"], 0.2})
+            CreateTween({DropFrame, "Size", GetFrameSize(), 0.2, true})
+        end
+        WaitClick = false
+    end
+
+    -- === Options logic ===
     local MultiSelect = DMultiSelect
-    local Selected = MultiSelect and {} or CheckFlag(Flag) and GetFlag(Flag) or (type(OpDefault) ~= "table" and OpDefault or OpDefault[1])
+    local Selected = MultiSelect and {} or (CheckFlag(Flag) and GetFlag(Flag) or (type(OpDefault) ~= "table" and OpDefault or OpDefault[1]))
 
     local function CallbackSelected()
         SetFlag(Flag, MultiSelect and Selected or tostring(Selected))
@@ -2398,8 +2459,8 @@ end
     local function UpdateLabel()
         if MultiSelect then
             local list = {}
-            for index, Value in pairs(Selected) do
-                if Value then table.insert(list, index) end
+            for k, v in pairs(Selected) do
+                if v then table.insert(list, k) end
             end
             ActiveLabel.Text = #list > 0 and table.concat(list, ", ") or "..."
         else
@@ -2408,35 +2469,46 @@ end
     end
 
     local function UpdateSelected()
-        for _,v in pairs(Options) do
-            local Slt = MultiSelect and Selected[v.Name] or v.Value == Selected
-            local nodes = v.nodes
-            CreateTween({nodes[2], "BackgroundTransparency", Slt and 0 or 1, 0.35})
-            CreateTween({nodes[2], "Size", Slt and UDim2.fromOffset(4, 14) or UDim2.fromOffset(4, 4), 0.35})
-            CreateTween({nodes[3], "TextTransparency", Slt and 0 or 0.4, 0.35})
+        for _, v in pairs(Options) do
+            local nodes, Stats = v.nodes, v.Stats
+            if MultiSelect then
+                CreateTween({nodes[2], "BackgroundTransparency", (v.Stats and 0) or 0.8, 0.35})
+                CreateTween({nodes[2], "Size", (v.Stats and UDim2.fromOffset(4, 12)) or UDim2.fromOffset(4, 4), 0.35})
+                CreateTween({nodes[3], "TextTransparency", (v.Stats and 0) or 0.4, 0.35})
+            else
+                local Slt = v.Value == Selected
+                CreateTween({nodes[2], "BackgroundTransparency", Slt and 0 or 1, 0.35})
+                CreateTween({nodes[2], "Size", Slt and UDim2.fromOffset(4, 14) or UDim2.fromOffset(4, 4), 0.35})
+                CreateTween({nodes[3], "TextTransparency", Slt and 0 or 0.4, 0.35})
+            end
         end
         UpdateLabel()
     end
 
-    local function Select(Option)
+    local function SelectOption(opt)
         if MultiSelect then
-            Option.Stats = not Option.Stats
-            Selected[Option.Name] = Option.Stats
+            opt.Stats = not opt.Stats
+            opt.LastCB = tick()
+            Selected[opt.Name] = opt.Stats
         else
-            Selected = Option.Value
+            opt.LastCB = tick()
+            Selected = opt.Value
         end
         CallbackSelected()
         UpdateSelected()
     end
 
-    local function AddOption(Name, Value)
-        Name = tostring(Name)
+    local function AddOption(index, Value)
+        local Name = tostring(type(index) == "string" and index or Value)
         if Options[Name] then return end
-        Options[Name] = { Value = Value, Name = Name }
+
+        Options[Name] = { index = index, Value = Value, Name = Name, Stats = false, LastCB = 0 }
 
         local ButtonOpt = Make("Button", ScrollFrame, {
             Name = "Option",
-            Size = UDim2.new(1, 0, 0, 21)
+            Size = UDim2.new(1, 0, 0, 21),
+            Position = UDim2.new(0, 0, 0.5),
+            AnchorPoint = Vector2.new(0, 0.5)
         })
         Make("Corner", ButtonOpt, UDim.new(0, 4))
 
@@ -2461,27 +2533,174 @@ end
         }), "Text")
 
         ButtonOpt.Activated:Connect(function()
-            Select(Options[Name])
+            SelectOption(Options[Name])
         end)
 
-        Options[Name].nodes = {ButtonOpt, IsSelected, OptionLabel}
+        Options[Name].nodes = { ButtonOpt, IsSelected, OptionLabel }
+
+        -- recalc sizes
+        CalculateSize()
     end
 
-    for _, v in pairs(DOptions) do
+    local function RemoveOption(index, Value)
+        local Name = tostring(type(index) == "string" and index or Value)
+        if Options[Name] then
+            if MultiSelect then Selected[Name] = nil else Selected = nil end
+            if Options[Name].nodes and Options[Name].nodes[1] then Options[Name].nodes[1]:Destroy() end
+            Options[Name] = nil
+            CalculateSize()
+        end
+    end
+
+    local function AddNewOptions(list, clear)
+        if clear then
+            for k, v in pairs(Options) do RemoveOption(k, v.Value) end
+        end
+        for _, val in ipairs(list) do
+            AddOption(val, val)
+        end
+        CallbackSelected()
+        UpdateSelected()
+    end
+
+    -- populate initial options (supports array)
+    for _, v in ipairs(DOptions) do
         AddOption(v, v)
     end
-
     CallbackSelected()
     UpdateSelected()
 
-    -- === Публичные методы ===
+    -- === Search filtering logic ===
+    SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local q = tostring(SearchBox.Text or ""):lower()
+        for _, opt in pairs(Options) do
+            if opt and opt.nodes and opt.nodes[1] then
+                local label = tostring(opt.Name or ""):lower()
+                local visible = (q == "" or label:find(q, 1, true) ~= nil)
+                opt.nodes[1].Visible = visible
+            end
+        end
+        CalculateSize()
+    end)
+
+    -- Search button open/close: button stays in place on Button's right; holder expands left so textbox appears to left of button
+    SearchBtn.Activated:Connect(function()
+        if SearchOpen then
+            -- close
+            SearchOpen = false
+            CreateTween({SearchHolder, "Size", UDim2.fromOffset(SEARCH_COLLAPSED_W, SEARCH_H), 0.18})
+            CreateTween({SearchBtn, "ImageColor3", Theme["Color Text"], 0.18})
+            task.delay(0.18, function()
+                if SearchBox and SearchBox.Parent then
+                    SearchBox.Visible = false
+                    SearchBox.Text = ""
+                    -- restore all options
+                    for _, opt in pairs(Options) do
+                        if opt and opt.nodes and opt.nodes[1] then opt.nodes[1].Visible = true end
+                    end
+                    CalculateSize()
+                end
+            end)
+        else
+            -- open: expand holder to the left, reveal textbox
+            SearchOpen = true
+            CreateTween({SearchHolder, "Size", UDim2.fromOffset(SEARCH_EXPANDED_W, SEARCH_H), 0.22})
+            CreateTween({SearchBtn, "ImageColor3", Theme["Color Theme"], 0.18})
+            task.delay(0.22, function()
+                if SearchBox and SearchBox.Parent then
+                    SearchBox.Visible = true
+                    pcall(function() SearchBox:CaptureFocus() end)
+                end
+            end)
+        end
+    end)
+
+    -- auto-close search on focus lost if empty
+    SearchBox.FocusLost:Connect(function(enter)
+        if (SearchBox.Text == nil or SearchBox.Text == "") and SearchOpen then
+            SearchOpen = false
+            CreateTween({SearchHolder, "Size", UDim2.fromOffset(SEARCH_COLLAPSED_W, SEARCH_H), 0.18})
+            CreateTween({SearchBtn, "ImageColor3", Theme["Color Text"], 0.18})
+            task.delay(0.18, function()
+                if SearchBox and SearchBox.Parent then
+                    SearchBox.Visible = false
+                    for _, opt in pairs(Options) do
+                        if opt and opt.nodes and opt.nodes[1] then opt.nodes[1].Visible = true end
+                    end
+                    CalculateSize()
+                end
+            end)
+        end
+    end)
+
+    -- connections & recalc
+    Button.Activated:Connect(Minimize)
+    NoClickFrame.MouseButton1Down:Connect(Disable)
+    NoClickFrame.MouseButton1Click:Connect(Disable)
+    MainFrame:GetPropertyChangedSignal("Visible"):Connect(Disable)
+    SelectedFrame:GetPropertyChangedSignal("AbsolutePosition"):Connect(CalculatePos)
+
+    Button.Activated:Connect(CalculateSize)
+    ScrollFrame.ChildAdded:Connect(CalculateSize)
+    ScrollFrame.ChildRemoved:Connect(CalculateSize)
+    CalculatePos()
+    CalculateSize()
+
+    -- API
     local Dropdown = {}
     function Dropdown:Visible(...) Funcs:ToggleVisible(Button, ...) end
     function Dropdown:Destroy() Button:Destroy() end
     function Dropdown:Callback(...) Funcs:InsertCallback(Callback, ...)(Selected) end
-    function Dropdown:Add(...) for _, Name in ipairs({...}) do AddOption(Name, Name) end end
-    function Dropdown:Remove(Option) if Options[Option] then Options[Option].nodes[1]:Destroy() Options[Option] = nil end end
-    function Dropdown:Select(Option) if Options[Option] then Select(Options[Option]) end end
+
+    function Dropdown:Add(...)
+        local args = {...}
+        if type(args[1]) == "table" then
+            for _, name in ipairs(args[1]) do AddOption(name, name) end
+        else
+            for _, name in ipairs(args) do AddOption(name, name) end
+        end
+        CalculateSize()
+    end
+
+    function Dropdown:Remove(Option)
+        if type(Option) == "string" then
+            RemoveOption(Option, Option)
+        elseif type(Option) == "number" then
+            local i = 0
+            for k, v in pairs(Options) do
+                i = i + 1
+                if i == Option then
+                    RemoveOption(k, v.Value)
+                    break
+                end
+            end
+        end
+        CalculateSize()
+    end
+
+    function Dropdown:Select(Option)
+        if type(Option) == "string" and Options[Option] then
+            SelectOption(Options[Option])
+        elseif type(Option) == "number" then
+            local i = 0
+            for _, v in pairs(Options) do
+                i = i + 1
+                if i == Option then
+                    SelectOption(v)
+                    break
+                end
+            end
+        end
+    end
+
+    function Dropdown:Set(Val1, Clear)
+        if type(Val1) == "table" then
+            AddNewOptions(Val1, not Clear)
+        elseif type(Val1) == "function" then
+            Callback = Val1
+        end
+    end
+
     return Dropdown
 end
 

@@ -2300,7 +2300,7 @@ function Tab:AddDropdown(Configs)
 	local SEARCH_EXPANDED_W = 170
 	local SEARCH_H = 40
 	local SEARCH_GAP_TOP = 120
-	local SEARCH_MOVE_RIGHT = 120 -- насколько вправо кнопка уедет при открытии (настраиваемо)
+	local SEARCH_MOVE_RIGHT = 200 -- насколько вправо кнопка уедет при открытии (настраиваемо)
 
 	local SearchHolder = InsertTheme(Create("Frame", DropFrame, {
 		Size = UDim2.fromOffset(SEARCH_COLLAPSED_W, SEARCH_H),

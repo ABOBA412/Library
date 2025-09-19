@@ -2296,10 +2296,10 @@ function Tab:AddDropdown(Configs)
 	Make("Corner", DropFrame) Make("Stroke", DropFrame) Make("Gradient", DropFrame, {Rotation = 60})
 
 	-- === SEARCH (маленькая квадратная кнопка в правом верхнем углу DropFrame; при открытии ездит вправо и раскрывает textbox влево) ===
-	local SEARCH_COLLAPSED_W = 28
-	local SEARCH_EXPANDED_W = 140
-	local SEARCH_H = 20
-	local SEARCH_GAP_TOP = 6
+	local SEARCH_COLLAPSED_W = 30
+	local SEARCH_EXPANDED_W = 150
+	local SEARCH_H = 30
+	local SEARCH_GAP_TOP = 20
 	local SEARCH_MOVE_RIGHT = 48 -- насколько вправо кнопка уедет при открытии (настраиваемо)
 
 	local SearchHolder = InsertTheme(Create("Frame", DropFrame, {

@@ -2299,7 +2299,7 @@ end
 	-- === SEARCH (маленькая кнопка в правом верхнем углу DropFrame) ===
 	local SearchHolder = InsertTheme(Create("Frame", DropFrame, {
 		Size = UDim2.fromOffset(28, 20),           -- компактный холдер (только кнопка)
-		Position = UDim2.new(1, -8, 0, 6),         -- правый верх с небольшим отступом
+		Position = UDim2.new(1, -8, 0, 13),         -- правый верх с небольшим отступом
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundTransparency = 1,
 		ClipsDescendants = true

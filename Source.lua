@@ -1431,31 +1431,188 @@ function redzlib:GetIcon(index)
 end
 
 function redzlib:SetTheme(NewTheme)
-	if not VerifyTheme(NewTheme) then return end
-	
+	-- проверка темы
+	if not VerifyTheme(NewTheme) then
+		return
+	end
+
+	-- обновляем сохранённую тему и локальную таблицу Theme
 	redzlib.Save.Theme = NewTheme
 	SaveJson("redz library V5.json", redzlib.Save)
 	Theme = redzlib.Themes[NewTheme]
-	
-	Comnection:FireConnection("ThemeChanged", NewTheme)
-	table.foreach(redzlib.Instances, function(_,Val)
-		if Val.Type == "Gradient" then
-			Val.Instance.Color = Theme["Color Hub 1"]
-		elseif Val.Type == "Frame" then
-			Val.Instance.BackgroundColor3 = Theme["Color Hub 2"]
-		elseif Val.Type == "Stroke" then
-			Val.Instance[GetColor(Val.Instance)] = Theme["Color Stroke"]
-		elseif Val.Type == "Theme" then
-			Val.Instance[GetColor(Val.Instance)] = Theme["Color Theme"]
-		elseif Val.Type == "Text" then
-			Val.Instance[GetColor(Val.Instance)] = Theme["Color Text"]
-		elseif Val.Type == "DarkText" then
-			Val.Instance[GetColor(Val.Instance)] = Theme["Color Dark Text"]
-		elseif Val.Type == "ScrollBar" then
-			Val.Instance[GetColor(Val.Instance)] = Theme["Color Theme"]
+
+	-- оповещаем подписчиков
+	pcall(function()
+		if Comnection and type(Comnection.FireConnection) == "function" then
+			Comnection:FireConnection("ThemeChanged", NewTheme)
+		end
+	end)
+
+	-- утилиты
+	local function safeSetProperty(inst, propName, value)
+		if not inst then return false end
+		-- защищённо пробуем установить свойство
+		local ok, err = pcall(function()
+			inst[propName] = value
+		end)
+		return ok, err
+	end
+
+	local function convertToColorSequence(v)
+		-- если уже ColorSequence — вернём как есть
+		if typeof(v) == "ColorSequence" then
+			return v
+		end
+		-- если Color3 — создаём простую ColorSequence из него
+		if typeof(v) == "Color3" then
+			return ColorSequence.new({ ColorSequenceKeypoint.new(0, v), ColorSequenceKeypoint.new(1, v) })
+		end
+		-- иначе возвращаем nil
+		return nil
+	end
+
+	-- Пройтись по всем зарегистрированным инстансам
+	table.foreach(redzlib.Instances, function(_, Val)
+		-- Val должен быть таблицей со свойствами Type и Instance
+		if type(Val) ~= "table" then return end
+		local inst = Val.Instance
+		if not inst or not inst.Parent then return end
+
+		-- поддержим несколько формата Val.Type: строка или таблица типов
+		local typesList = {}
+		if type(Val.Type) == "string" then
+			typesList[1] = Val.Type
+		elseif type(Val.Type) == "table" then
+			for _, t in ipairs(Val.Type) do
+				if type(t) == "string" then table.insert(typesList, t) end
+			end
+		end
+
+		-- если GetColor существует — получаем имя свойства, иначе попытаемся угадать
+		local propName
+		if type(GetColor) == "function" then
+			-- защитно: pcall
+			local ok, res = pcall(function() return GetColor(inst) end)
+			if ok and type(res) == "string" then
+				propName = res
+			end
+		end
+
+		-- пробегаем по каждому типу и выполняем соответствующие изменения
+		for _, t in ipairs(typesList) do
+			if t == "Gradient" then
+				-- у градиента свойство называется "Color" и ожидает ColorSequence
+				local themeVal = Theme["Color Hub 1"]
+				local cs = convertToColorSequence(themeVal)
+				if cs then
+					-- безопасно ставим .Color если существует
+					if inst:IsA("UIGradient") or inst:IsA("Gradient") or inst:FindFirstChild("Color") or inst.Color then
+						-- по возможности использовать прямое свойство
+						pcall(function()
+							-- если свойство Color существует и его тип — ColorSequence
+							if typeof(inst.Color) == "ColorSequence" then
+								inst.Color = cs
+							else
+								-- попытка: если нет .Color, но есть .Color3 или подобное — пропускаем (не трогаем)
+								inst.Color = cs
+							end
+						end)
+					else
+						-- попытка установить свойство через raw assignment
+						safeSetProperty(inst, "Color", cs)
+					end
+				end
+
+			elseif t == "Frame" then
+				local themeVal = Theme["Color Hub 2"]
+				-- frame.BackgroundColor3
+				pcall(function()
+					if typeof(inst.BackgroundColor3) == "Color3" then
+						inst.BackgroundColor3 = themeVal
+					else
+						safeSetProperty(inst, "BackgroundColor3", themeVal)
+					end
+				end)
+
+			elseif t == "Stroke" then
+				-- Stroke - нужно определить имя свойства (GetColor) — обычно "Color" у UIStroke или свойство у элемента
+				local themeVal = Theme["Color Stroke"]
+				if propName and type(propName) == "string" then
+					safeSetProperty(inst, propName, themeVal)
+				else
+					-- попытка поддержать UIStroke (у него Color), UIDecorations и т.д.
+					pcall(function()
+						if inst:IsA("UIStroke") then
+							inst.Color = themeVal
+						else
+							-- попытка поставить стандартное свойство "Color"
+							inst.Color = themeVal
+						end
+					end)
+				end
+
+			elseif t == "Theme" or t == "ScrollBar" then
+				-- Theme и ScrollBar используют Color Theme
+				local themeVal = Theme["Color Theme"]
+				if propName and type(propName) == "string" then
+					safeSetProperty(inst, propName, themeVal)
+				else
+					-- часто это BackgroundColor3 или ImageColor3 либо ScrollBarImageColor3
+					pcall(function()
+						if typeof(inst.BackgroundColor3) == "Color3" then
+							inst.BackgroundColor3 = themeVal
+						elseif typeof(inst.ImageColor3) == "Color3" then
+							inst.ImageColor3 = themeVal
+						elseif inst:IsA("ScrollingFrame") and inst:FindFirstChild("ScrollBar") then
+							-- нестандартный — игнорируем
+						else
+							-- попытка назначить универсально
+							if rawget(inst, "BackgroundColor3") ~= nil then inst.BackgroundColor3 = themeVal end
+							if rawget(inst, "ImageColor3") ~= nil then inst.ImageColor3 = themeVal end
+						end
+					end)
+				end
+
+			elseif t == "Text" then
+				local themeVal = Theme["Color Text"]
+				if propName and type(propName) == "string" then
+					safeSetProperty(inst, propName, themeVal)
+				else
+					pcall(function()
+						if typeof(inst.TextColor3) == "Color3" then
+							inst.TextColor3 = themeVal
+						else
+							safeSetProperty(inst, "TextColor3", themeVal)
+						end
+					end)
+				end
+
+			elseif t == "DarkText" then
+				local themeVal = Theme["Color Dark Text"]
+				if propName and type(propName) == "string" then
+					safeSetProperty(inst, propName, themeVal)
+				else
+					pcall(function()
+						if typeof(inst.TextColor3) == "Color3" then
+							inst.TextColor3 = themeVal
+						else
+							safeSetProperty(inst, "TextColor3", themeVal)
+						end
+					end)
+				end
+			else
+				-- неизвестный тип — попробуем применить универсальные обновления (Text/Background/Image)
+				-- не мешаем, но безопасно
+				pcall(function()
+					if Theme["Color Text"] and rawget(inst, "TextColor3") ~= nil then inst.TextColor3 = Theme["Color Text"] end
+					if Theme["Color Hub 2"] and rawget(inst, "BackgroundColor3") ~= nil then inst.BackgroundColor3 = Theme["Color Hub 2"] end
+					if Theme["Color Theme"] and rawget(inst, "ImageColor3") ~= nil then inst.ImageColor3 = Theme["Color Theme"] end
+				end)
+			end
 		end
 	end)
 end
+
 
 function redzlib:SetScale(NewScale)
 	NewScale = ViewportSize.Y / math.clamp(NewScale, 300, 2000)

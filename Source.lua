@@ -5,8 +5,8 @@ local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local Player = Players.LocalPlayer
 local PlayerMouse = Player:GetMouse()
+local Player = Players.LocalPlayer
 
 local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 
@@ -36,7 +36,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(245, 245, 245),
 			["Color Dark Text"] = Color3.fromRGB(190, 190, 190)
 		},
-                Red = {
+        Red = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -48,7 +48,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                Yellow = {
+        Yellow = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -60,7 +60,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                Green = {
+        Green = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -72,7 +72,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                Blue = {
+        Blue = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -84,7 +84,7 @@ local redzlib = {
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
-                White = {
+        White = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
@@ -1213,7 +1213,7 @@ local function MakeDrag(Instance)
 		local function Update(Input)
 			local delta = Input.Position - DragStart
 			local Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + delta.X / UIScale, StartPos.Y.Scale, StartPos.Y.Offset + delta.Y / UIScale)
-			-- Instance.Position = Position
+			
 			CreateTween({Instance, "Position", Position, 0.35})
 		end
 		
@@ -1431,27 +1431,27 @@ function redzlib:GetIcon(index)
 end
 
 function redzlib:SetTheme(NewTheme)
-	-- проверка темы
+	
 	if not VerifyTheme(NewTheme) then
 		return
 	end
 
-	-- обновляем сохранённую тему и локальную таблицу Theme
+	
 	redzlib.Save.Theme = NewTheme
 	SaveJson("redz library V5.json", redzlib.Save)
 	Theme = redzlib.Themes[NewTheme]
 
-	-- оповещаем подписчиков
+	
 	pcall(function()
 		if Comnection and type(Comnection.FireConnection) == "function" then
 			Comnection:FireConnection("ThemeChanged", NewTheme)
 		end
 	end)
 
-	-- утилиты
+	
 	local function safeSetProperty(inst, propName, value)
 		if not inst then return false end
-		-- защищённо пробуем установить свойство
+		
 		local ok, err = pcall(function()
 			inst[propName] = value
 		end)
@@ -1459,26 +1459,26 @@ function redzlib:SetTheme(NewTheme)
 	end
 
 	local function convertToColorSequence(v)
-		-- если уже ColorSequence — вернём как есть
+		
 		if typeof(v) == "ColorSequence" then
 			return v
 		end
-		-- если Color3 — создаём простую ColorSequence из него
+		
 		if typeof(v) == "Color3" then
 			return ColorSequence.new({ ColorSequenceKeypoint.new(0, v), ColorSequenceKeypoint.new(1, v) })
 		end
-		-- иначе возвращаем nil
+		
 		return nil
 	end
 
-	-- Пройтись по всем зарегистрированным инстансам
+	
 	table.foreach(redzlib.Instances, function(_, Val)
-		-- Val должен быть таблицей со свойствами Type и Instance
+		
 		if type(Val) ~= "table" then return end
 		local inst = Val.Instance
 		if not inst or not inst.Parent then return end
 
-		-- поддержим несколько формата Val.Type: строка или таблица типов
+		
 		local typesList = {}
 		if type(Val.Type) == "string" then
 			typesList[1] = Val.Type
@@ -1488,44 +1488,44 @@ function redzlib:SetTheme(NewTheme)
 			end
 		end
 
-		-- если GetColor существует — получаем имя свойства, иначе попытаемся угадать
+		
 		local propName
 		if type(GetColor) == "function" then
-			-- защитно: pcall
+			
 			local ok, res = pcall(function() return GetColor(inst) end)
 			if ok and type(res) == "string" then
 				propName = res
 			end
 		end
 
-		-- пробегаем по каждому типу и выполняем соответствующие изменения
+		
 		for _, t in ipairs(typesList) do
 			if t == "Gradient" then
-				-- у градиента свойство называется "Color" и ожидает ColorSequence
+				
 				local themeVal = Theme["Color Hub 1"]
 				local cs = convertToColorSequence(themeVal)
 				if cs then
-					-- безопасно ставим .Color если существует
+					
 					if inst:IsA("UIGradient") or inst:IsA("Gradient") or inst:FindFirstChild("Color") or inst.Color then
-						-- по возможности использовать прямое свойство
+						
 						pcall(function()
-							-- если свойство Color существует и его тип — ColorSequence
+							
 							if typeof(inst.Color) == "ColorSequence" then
 								inst.Color = cs
 							else
-								-- попытка: если нет .Color, но есть .Color3 или подобное — пропускаем (не трогаем)
+								
 								inst.Color = cs
 							end
 						end)
 					else
-						-- попытка установить свойство через raw assignment
+						
 						safeSetProperty(inst, "Color", cs)
 					end
 				end
 
 			elseif t == "Frame" then
 				local themeVal = Theme["Color Hub 2"]
-				-- frame.BackgroundColor3
+				
 				pcall(function()
 					if typeof(inst.BackgroundColor3) == "Color3" then
 						inst.BackgroundColor3 = themeVal
@@ -1535,38 +1535,38 @@ function redzlib:SetTheme(NewTheme)
 				end)
 
 			elseif t == "Stroke" then
-				-- Stroke - нужно определить имя свойства (GetColor) — обычно "Color" у UIStroke или свойство у элемента
+				
 				local themeVal = Theme["Color Stroke"]
 				if propName and type(propName) == "string" then
 					safeSetProperty(inst, propName, themeVal)
 				else
-					-- попытка поддержать UIStroke (у него Color), UIDecorations и т.д.
+					
 					pcall(function()
 						if inst:IsA("UIStroke") then
 							inst.Color = themeVal
 						else
-							-- попытка поставить стандартное свойство "Color"
+							
 							inst.Color = themeVal
 						end
 					end)
 				end
 
 			elseif t == "Theme" or t == "ScrollBar" then
-				-- Theme и ScrollBar используют Color Theme
+				
 				local themeVal = Theme["Color Theme"]
 				if propName and type(propName) == "string" then
 					safeSetProperty(inst, propName, themeVal)
 				else
-					-- часто это BackgroundColor3 или ImageColor3 либо ScrollBarImageColor3
+					
 					pcall(function()
 						if typeof(inst.BackgroundColor3) == "Color3" then
 							inst.BackgroundColor3 = themeVal
 						elseif typeof(inst.ImageColor3) == "Color3" then
 							inst.ImageColor3 = themeVal
 						elseif inst:IsA("ScrollingFrame") and inst:FindFirstChild("ScrollBar") then
-							-- нестандартный — игнорируем
+							
 						else
-							-- попытка назначить универсально
+							
 							if rawget(inst, "BackgroundColor3") ~= nil then inst.BackgroundColor3 = themeVal end
 							if rawget(inst, "ImageColor3") ~= nil then inst.ImageColor3 = themeVal end
 						end
@@ -1601,8 +1601,7 @@ function redzlib:SetTheme(NewTheme)
 					end)
 				end
 			else
-				-- неизвестный тип — попробуем применить универсальные обновления (Text/Background/Image)
-				-- не мешаем, но безопасно
+				
 				pcall(function()
 					if Theme["Color Text"] and rawget(inst, "TextColor3") ~= nil then inst.TextColor3 = Theme["Color Text"] end
 					if Theme["Color Hub 2"] and rawget(inst, "BackgroundColor3") ~= nil then inst.BackgroundColor3 = Theme["Color Hub 2"] end
@@ -1905,7 +1904,7 @@ local function formatTimeSeconds(totalSeconds)
         if minutes > 0 then
             return string.format("%dh %dm %ds", hours, minutes, seconds)
         else
-            return string.format("%dh %dm %ds", hours, minutes, seconds) -- keep same if minutes 0
+            return string.format("%dh %dm %ds", hours, minutes, seconds) 
         end
     elseif minutes > 0 then
         return string.format("%dm %ds", minutes, seconds)
@@ -2099,7 +2098,7 @@ end
 			
 			for _,Button in pairs(ButtonsHolder:GetChildren()) do
 				if Button:IsA("TextButton") then
-					Button.Size = UDim2.new(1 / ButtonCount, -(((ButtonCount - 1) * 20) / ButtonCount), 0, 32) -- Fluent Library :)
+					Button.Size = UDim2.new(1 / ButtonCount, -(((ButtonCount - 1) * 20) / ButtonCount), 0, 32) 
 				end
 			end
 			Button.Activated:Connect(Dialog.Close)

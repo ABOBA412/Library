@@ -5,8 +5,8 @@ local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local PlayerMouse = Player:GetMouse()
 local Player = Players.LocalPlayer
+local PlayerMouse = Player:GetMouse()
 
 local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 

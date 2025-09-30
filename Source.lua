@@ -12,7 +12,7 @@ local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 
 local redzlib = {
 	Themes = {
-		Default = {
+		Darker = {
 			["Color Hub 1"] = ColorSequence.new({
 				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
 				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),

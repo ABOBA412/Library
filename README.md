@@ -40,6 +40,9 @@ local Window = redzlib:MakeWindow({
 
 ## Кнопка для сворачивания
 ```lua
+local Minimizer = Window:NewMinimizer({
+  KeyCode = Enum.KeyCode.LeftControl
+})
 Window:AddMinimizeButton({
     Button = { Image = "rbxassetid://71014873973869", BackgroundTransparency = 0 },
     Corner = { CornerRadius = UDim.new(35, 1) },

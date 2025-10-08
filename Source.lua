@@ -1619,8 +1619,8 @@ function redzlib:SetScale(NewScale)
 end
 
 function redzlib:MakeWindow(Configs)
-	local WTitle = Configs[1] or Configs.Name or Configs.Title or "redz Library V5"
-	local WMiniText = Configs[2] or Configs.SubTitle or "by : redz9999"
+	local WTitle = Configs[1] or Configs.Name or Configs.Title
+	local WMiniText = Configs[2] or Configs.SubTitle
 	
 	Settings.ScriptFile = Configs[3] or Configs.SaveFolder or false
 	
@@ -1676,7 +1676,7 @@ function redzlib:MakeWindow(Configs)
 		TextSize = 12,
 		TextColor3 = Theme["Color Text"],
 		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.GothamBold,
 		Name = "Title"
 	}, {
 		InsertTheme(Create("TextLabel", {
@@ -1773,22 +1773,117 @@ function redzlib:MakeWindow(Configs)
 		Name = "Buttons"
 	})
 	
-	local CloseButton = Create("ImageButton", {
-		Size = UDim2.new(0, 14, 0, 14),
-		Position = UDim2.new(1, -10, 0.5),
-		AnchorPoint = Vector2.new(1, 0.5),
-		BackgroundTransparency = 1,
-		Image = "rbxassetid://10747384394",
-		AutoButtonColor = false,
-		Name = "Close"
-	})
-	
+	local CloseButton = Instance.new("ImageButton")
+    CloseButton.Size = UDim2.new(0, 18, 0, 18) 
+    CloseButton.Position = UDim2.new(1, -10, 0.5)
+    CloseButton.AnchorPoint = Vector2.new(1, 0.5)
+    CloseButton.BackgroundTransparency = 1
+    CloseButton.Image = "rbxassetid://10747384394"
+    CloseButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.AutoButtonColor = false
+    CloseButton.Name = "Close"
+    CloseButton.Parent = parentFrame
+
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 3)
+    corner.Parent = CloseButton
+
+
+    local overlay = Instance.new("TextLabel")
+    overlay.Size = UDim2.new(1,0,1,0)
+    overlay.BackgroundTransparency = 1
+    overlay.Text = ""
+    overlay.TextColor3 = Color3.fromRGB(255,255,255)
+    overlay.Font = Enum.Font.GothamBold
+    overlay.TextSize = 14
+    overlay.Parent = CloseButton
+
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Parent = overlay
+    stroke.Color = Color3.fromRGB(0,0,0)
+    stroke.Thickness = 1
+
+
+    local defaultBgTransparency = 1
+    local hoverBgColor = Color3.fromRGB(92, 21, 21) 
+    local pressedBgColor = Color3.fromRGB(170, 40, 40) 
+
+
+    CloseButton.MouseEnter:Connect(function()
+	    CloseButton.BackgroundColor3 = hoverBgColor
+	    CloseButton.BackgroundTransparency = 0
+    end)
+
+    CloseButton.MouseLeave:Connect(function()
+	    CloseButton.BackgroundTransparency = defaultBgTransparency
+    end)
+
+    CloseButton.MouseButton1Down:Connect(function()
+	    CloseButton.BackgroundColor3 = pressedBgColor
+	    CloseButton.BackgroundTransparency = 0
+    end)
+
+    CloseButton.MouseButton1Up:Connect(function()
+	    if CloseButton:IsMouseOver() then
+	    	CloseButton.BackgroundColor3 = hoverBgColor
+	    	CloseButton.BackgroundTransparency = 0
+	    else
+	    	CloseButton.BackgroundTransparency = defaultBgTransparency
+	    end
+    end)
+
 	local MinimizeButton = SetProps(CloseButton:Clone(), {
-		Position = UDim2.new(1, -35, 0.5),
-		Image = "rbxassetid://10734896206",
-		Name = "Minimize"
-	})
-	
+	Position = UDim2.new(1, -35, 0.5),
+	Image = "rbxassetid://10734896206",
+	Name = "Minimize"
+})
+
+
+    for _, conn in pairs(getconnections(MinimizeButton.MouseEnter)) do
+        conn:Disconnect()
+    end
+    for _, conn in pairs(getconnections(MinimizeButton.MouseLeave)) do
+        conn:Disconnect()
+    end
+    for _, conn in pairs(getconnections(MinimizeButton.MouseButton1Down)) do
+        conn:Disconnect()
+    end
+    for _, conn in pairs(getconnections(MinimizeButton.MouseButton1Up)) do
+        conn:Disconnect()
+    end
+
+
+    local defaultBgTransparency = 1
+    local hoverBgColor = Color3.fromRGB(111, 111, 117) 
+    local pressedBgColor = Color3.fromRGB(170, 170, 170) 
+
+
+    MinimizeButton.MouseEnter:Connect(function()
+	    MinimizeButton.BackgroundColor3 = hoverBgColor
+	    MinimizeButton.BackgroundTransparency = 0
+    end)
+
+    MinimizeButton.MouseLeave:Connect(function()
+	    MinimizeButton.BackgroundTransparency = defaultBgTransparency
+    end)
+
+
+    MinimizeButton.MouseButton1Down:Connect(function()
+	    MinimizeButton.BackgroundColor3 = pressedBgColor
+	    MinimizeButton.BackgroundTransparency = 0
+    end)
+
+    MinimizeButton.MouseButton1Up:Connect(function()
+	    if MinimizeButton:IsMouseOver() then
+	    	MinimizeButton.BackgroundColor3 = hoverBgColor
+	    	MinimizeButton.BackgroundTransparency = 0
+	    else
+	    	MinimizeButton.BackgroundTransparency = defaultBgTransparency
+	    end
+    end)
+
 	SetChildren(ButtonsFolder, {
 		CloseButton,
 		MinimizeButton
@@ -1833,6 +1928,21 @@ function redzlib:MakeWindow(Configs)
 	function Window:Minimize()
 		MainFrame.Visible = not MainFrame.Visible
 	end
+
+	function Window:NewMinimizer(Configs)
+	local KeyCode = Configs[1] or Configs.KeyCode
+    
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == KeyCode then
+            if UserInputService.KeyboardEnabled then
+               Window:Minimize()
+            end
+        end
+    end)
+    
+    end
+
 	function Window:AddMinimizeButton(Configs)
 		local Button = MakeDrag(Create("ImageButton", ScreenGui, {
 			Size = UDim2.fromOffset(35, 35),
@@ -3063,4 +3173,3 @@ end
 end
 
 return redzlib
-

@@ -1997,9 +1997,18 @@ if not NotificationsHolder then
 end
 
 local function updatePositions()
+    local yOffset = 0
     for i, v in ipairs(ActiveNotifications) do
-        local y = -(i - 1) * TOTAL_H
+        
+        local h = NOTIF_H
+        pcall(function()
+            if v and v.Size and v.Size.Y and typeof(v.Size.Y.Offset) == "number" then
+                h = v.Size.Y.Offset
+            end
+        end)
+        local y = -yOffset
         CreateTween({v, "Position", UDim2.new(1, -10, 1, y), 0.25})
+        yOffset = yOffset + h + SPACING
     end
 end
 
@@ -2029,8 +2038,49 @@ function Window:Notify(Configs)
     local Image = Configs.Image or ""
     local Duration = Configs.Duration or 5
 
+    local TextService = game:GetService("TextService")
+
+    local paddingTop = 8
+    local paddingBottom = 8
+    local baseRightPad = 62 
+    local iconSize = 32
+    local iconLeft = 10
+
+    local leftOffset = (Image ~= "" ) and (iconLeft + iconSize + 8) or 15
+    local rightPad = (Image ~= "" ) and baseRightPad or 20
+    local maxTextWidth = math.max(10, NOTIF_W - leftOffset - rightPad)
+
+    
+    local sampleTitle = TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000))
+    local titleLineH = sampleTitle.Y
+    local sampleContent = TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000))
+    local contentLineH = sampleContent.Y
+
+    
+    local titleEstimate = TextService:GetTextSize(tostring(Title), 16, Enum.Font.GothamBold, Vector2.new(maxTextWidth, math.huge)).Y
+    local contentEstimate = TextService:GetTextSize(tostring(Content), 14, Enum.Font.Gotham, Vector2.new(maxTextWidth, math.huge)).Y
+
+    
+    local titleLines = math.max(1, math.ceil(titleEstimate / math.max(1, titleLineH)))
+    local contentLines = math.max(1, math.ceil(contentEstimate / math.max(1, contentLineH)))
+
+    
+    local maxLinesAllowed = 8 
+    if titleLines > maxLinesAllowed then titleLines = maxLinesAllowed end
+    if contentLines > maxLinesAllowed then contentLines = maxLinesAllowed end
+
+    local usedTitleH = titleLines * titleLineH
+    local usedContentH = contentLines * contentLineH
+
+    
+    local paddingBetween = math.ceil(contentLineH * 0.25)
+
+    local neededHeight = math.ceil(paddingTop + usedTitleH + paddingBetween + usedContentH + paddingBottom)
+    if neededHeight < NOTIF_H then neededHeight = NOTIF_H end
+
+    
     local Notif = InsertTheme(Create("Frame", NotificationsHolder, {
-        Size = UDim2.fromOffset(NOTIF_W, NOTIF_H),
+        Size = UDim2.fromOffset(NOTIF_W, neededHeight),
         Position = UDim2.new(1, 300, 1, 0),
         BackgroundTransparency = 0.1,
         BackgroundColor3 = Theme["Color Hub 2"],
@@ -2039,51 +2089,60 @@ function Window:Notify(Configs)
     Make("Corner", Notif)
     Make("Gradient", Notif, {Rotation = 45})
 
+    
     if Image ~= "" then
         Create("ImageLabel", Notif, {
             Image = Image,
-            Size = UDim2.fromOffset(32, 32),
-            Position = UDim2.fromOffset(10, 14),
+            Size = UDim2.fromOffset(iconSize, iconSize),
+            Position = UDim2.new(0, iconLeft, 0.5, -iconSize/2),
             BackgroundTransparency = 1
         })
     end
 
-    InsertTheme(Create("TextLabel", Notif, {
+    
+    local TitleLabel = InsertTheme(Create("TextLabel", Notif, {
         Text = Title,
         Font = Enum.Font.GothamBold,
         TextSize = 16,
         TextColor3 = Theme["Color Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(50, 8),
-        Size = UDim2.new(1, -60, 0, 20),
-        TextXAlignment = Enum.TextXAlignment.Left
+        Position = UDim2.fromOffset(leftOffset, paddingTop),
+        Size = UDim2.fromOffset(maxTextWidth, math.ceil(usedTitleH)),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        TextWrapped = true
     }), "Text")
 
-    InsertTheme(Create("TextLabel", Notif, {
+    
+    local ContentLabel = InsertTheme(Create("TextLabel", Notif, {
         Text = Content,
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextColor3 = Theme["Color Dark Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(50, 30),
-        Size = UDim2.new(1, -60, 0, 20),
-        TextXAlignment = Enum.TextXAlignment.Left
+        Position = UDim2.fromOffset(leftOffset, paddingTop + usedTitleH + paddingBetween),
+        Size = UDim2.fromOffset(maxTextWidth, math.ceil(usedContentH)),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        TextWrapped = true
     }), "DarkText")
 
     
     local TimerLabel = InsertTheme(Create("TextLabel", Notif, {
-        Text = formatTimeSeconds(Duration), 
+        Text = formatTimeSeconds(Duration),
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextColor3 = Theme["Color Dark Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(NOTIF_W - 62, 6), 
+        Position = UDim2.fromOffset(NOTIF_W - 62, 6),
         Size = UDim2.fromOffset(44, 18),
         TextXAlignment = Enum.TextXAlignment.Right
     }), "DarkText")
 
     Notif.AnchorPoint = Vector2.new(1, 1)
     table.insert(ActiveNotifications, 1, Notif)
+
+    
     updatePositions()
 
     local targetY = Notif.Position.Y.Offset
@@ -2095,9 +2154,7 @@ function Window:Notify(Configs)
         while true do
             if not TimerLabel or not TimerLabel.Parent then break end
             local remain = math.max(0, endTime - tick())
-            
-            local display = formatTimeSeconds(remain)
-            pcall(function() TimerLabel.Text = display end)
+            pcall(function() TimerLabel.Text = formatTimeSeconds(remain) end)
             if remain <= 0 then break end
             task.wait(1)
         end

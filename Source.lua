@@ -1905,6 +1905,7 @@ function redzlib:MakeWindow(Configs)
 		})
 	end
 	function Window:MinimizeBtn()
+		if MainFrame:FindFirstChild("Dialog") then return end
 		if WaitClick then return end
 		WaitClick = true
 		

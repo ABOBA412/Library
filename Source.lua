@@ -1,6 +1,7 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -2038,9 +2039,7 @@ function Window:Notify(Configs)
     local Content = Configs.Content or "This is a Notification"
     local Image = Configs.Image or ""
     local Duration = Configs.Duration or 5
-
-    local TextService = game:GetService("TextService")
-
+			
     local paddingTop = 8
     local paddingBottom = 8
     local baseRightPad = 62 

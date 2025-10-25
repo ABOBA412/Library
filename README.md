@@ -24,7 +24,7 @@ local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/ABOBA
 ```
 # 2 Способ локальный
 ```lua
-local succes, redzlib = pcall(function()
+local success, redzlib = pcall(function()
 -- Вставьте сюда содержимое пользовательского интерфейса.
 end)
 ```
@@ -146,7 +146,7 @@ Tab1:AddSlider({
   Increase = 1,
   Default = 16,
   Callback = function(State)
-  G.TweenSpeed = state
+  G.TweenSpeed = State
   end
 })
 ```

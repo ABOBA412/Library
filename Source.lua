@@ -1934,17 +1934,15 @@ function redzlib:MakeWindow(Configs)
 	  function Window:NewMinimizer(Configs)
 	  local KeyCode = Configs[1] or Configs.KeyCode
     
-      UserInputService.InputBegan:Connect(function(input, gameProcessed)
-      if gameProcessed then return end
-    
-      if input.KeyCode == KeyCode or input.UserInputType == KeyCode then
-          if UserInputService.KeyboardEnabled then
-              Window:Minimize()
+          UserInputService.InputBegan:Connect(function(input)
+     
+          if input.KeyCode == KeyCode or input.UserInputType == KeyCode then
+              if UserInputService.KeyboardEnabled then
+                  Window:Minimize()
+              end
           end
-      end
-  end)
-    
-    end
+      end)
+  end
 
 	function Window:AddMinimizeButton(Configs)
 		local Button = MakeDrag(Create("ImageButton", ScreenGui, {

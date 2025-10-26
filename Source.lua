@@ -1931,17 +1931,18 @@ function redzlib:MakeWindow(Configs)
 		MainFrame.Visible = not MainFrame.Visible
 	end
 
-	function Window:NewMinimizer(Configs)
-	local KeyCode = Configs[1] or Configs.KeyCode
+	  function Window:NewMinimizer(Configs)
+	  local KeyCode = Configs[1] or Configs.KeyCode
     
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.KeyCode == KeyCode then
-            if UserInputService.KeyboardEnabled then
-               Window:Minimize()
-            end
-        end
-    end)
+      UserInputService.InputBegan:Connect(function(input, gameProcessed)
+      if gameProcessed then return end
+    
+      if input.KeyCode == KeyCode or input.UserInputType == KeyCode then
+          if UserInputService.KeyboardEnabled then
+              Window:Minimize()
+          end
+      end
+  end)
     
     end
 

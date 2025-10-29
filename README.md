@@ -127,7 +127,7 @@ end)
 Tab1:AddToggle({
     Name = "Auto Farm Nearest",
     Default = false,
-    Flag = "Auto Farm Nearest"
+    Flag = "Auto Farm Nearest",
     Callback = function(v)
     IsFarming = v
     end

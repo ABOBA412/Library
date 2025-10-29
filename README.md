@@ -142,7 +142,7 @@ Tab1:AddSlider({
   Name = "Tween Speed",
   Min = 1, -- Минимальное значение.
   Max = 100, -- Максимальное значение.
-  Flag = "Tween Speed"
+  Flag = "Tween Speed",
   Increase = 1,
   Default = 16,
   Callback = function(State)

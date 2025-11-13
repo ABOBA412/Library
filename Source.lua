@@ -1444,12 +1444,8 @@ function redzlib:GetIcon(index)
 end
 
 function redzlib:SetTheme(NewTheme)
-	
-	if not VerifyTheme(NewTheme) then
-		return
-	end
-
-	
+	if not VerifyTheme(NewTheme) then return end
+		
 	redzlib.Save.Theme = NewTheme
 	SaveJson("redz library V5.json", redzlib.Save)
 	Theme = redzlib.Themes[NewTheme]

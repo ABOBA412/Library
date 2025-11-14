@@ -499,6 +499,7 @@ local redzlib = {
 			["flipvertical2"] = "rbxassetid://10723377026",
 			["flower"] = "rbxassetid://10747830374",
 			["flower2"] = "rbxassetid://10723377305",
+			["fish"] = "127664059821666",
 			["focus"] = "rbxassetid://10723377537",
 			["folder"] = "rbxassetid://10723387563",
 			["folderarchive"] = "rbxassetid://10723384478",

@@ -52,10 +52,13 @@ Window:AddMinimizeButton({
 ## Приглашение в Discord
 ```lua
 Tab1:AddDiscordInvite({
-    Name = "Name Hub",
-    Description = "Join server",
-    Logo = "rbxassetid://18751483361", -- Картинка.
-    Invite = "Link discord invite", -- Ссылка Discrod.
+	Title = "Name Hub",
+	Description = "Join server",
+	Banner = "rbxassetid://18751483361", -- You can put an RGB Color: Color3.fromRGB(0, 0, 0)
+	Logo = "rbxassetid://18751483361",
+	Invite = "Link discord invite",
+	Members = 200000, -- Optional
+	Online = 20000, -- Optional
 })
 ```
 

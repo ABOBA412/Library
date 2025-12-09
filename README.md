@@ -35,6 +35,10 @@ local Window = redzlib:MakeWindow({
   Title = "redz Hub : Blox Fruits",
   SubTitle = "by redz9999",
   SaveFolder = "redz_hub" -- название Json файла с сохранениями Flag ов
+  StartWindow = true, -- true/false
+  StartWindowTitle = "redz Hub",
+  StartWindowDescription = "the best script",
+  StartWindowImage = "rbxassetid://18751483361" 
 })
 ```
 

@@ -1629,10 +1629,19 @@ function redzlib:SetScale(NewScale)
 end
 
 function redzlib:MakeWindow(Configs)
-	local WTitle = Configs[1] or Configs.Name or Configs.Title
-	local WMiniText = Configs[2] or Configs.SubTitle
-	
-	Settings.ScriptFile = Configs[3] or Configs.SaveFolder or false
+    local WTitle = Configs[1] or Configs.Name or Configs.Title
+    local WMiniText = Configs[2] or Configs.SubTitle
+
+    local StartWindowEnabled = Configs.StartWindow or false
+    local StartWindowTitle = Configs.StartWindowTitle or WTitle or ""
+    local StartWindowDescription = Configs.StartWindowDescription or ""
+    local StartWindowImage = Configs.StartWindowImage or ""
+
+    if StartWindowImage and StartWindowImage ~= "" then
+        StartWindowImage = redzlib:GetIcon(StartWindowImage)
+    end
+
+    Settings.ScriptFile = Configs[3] or Configs.SaveFolder or false
 	
 	local function LoadFile()
 		local File = Settings.ScriptFile
@@ -1670,7 +1679,98 @@ function redzlib:MakeWindow(Configs)
 	local DropdownHolder = Create("Folder", ScreenGui, {
 		Name = "Dropdown"
 	})
-	
+	if StartWindowEnabled then
+        local Overlay = Create("Frame", MainFrame, {
+            Name = "StartWindowOverlay",
+            Size = UDim2.fromScale(1, 1),
+            Position = UDim2.fromScale(0, 0),
+            BackgroundTransparency = 1, 
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+			BorderSizePixel = 0,
+            ZIndex = 10
+        })
+        Make("Corner", Overlay, UDim.new(0, 8)) 
+
+        if StartWindowImage and StartWindowImage ~= "" then
+            Logo = Create("ImageLabel", Overlay, {
+                Name = "StartLogo",
+                BackgroundTransparency = 1,
+                Size = UDim2.fromOffset(80, 80), 
+                AnchorPoint = Vector2.new(0.5, 1),
+                Position = UDim2.new(0.5, 0, 0.5, -8),
+                Image = StartWindowImage,
+                ImageTransparency = 1,
+                ZIndex = 11
+            })
+        end
+
+        local TitleLabel = InsertTheme(Create("TextLabel", Overlay, {
+            Name = "StartTitle",
+            BackgroundTransparency = 1,
+            AnchorPoint = Vector2.new(0.5, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 12),
+            AutomaticSize = Enum.AutomaticSize.XY,
+            Text = StartWindowTitle,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 14, 
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            TextColor3 = Theme["Color Text"],
+            TextTransparency = 1,
+            ZIndex = 11
+        }), "Text")
+
+
+        if StartWindowDescription ~= "" then
+            DescriptionLabel = Create("TextLabel", Overlay, {
+                Name = "StartDescription",
+                BackgroundTransparency = 1,
+                AnchorPoint = Vector2.new(0.5, 0),
+                Position = UDim2.new(0.5, 0, 0.5, 32),
+                AutomaticSize = Enum.AutomaticSize.XY,
+                Text = StartWindowDescription,
+                Font = Enum.Font.Gotham,
+                TextSize = 12,
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextYAlignment = Enum.TextYAlignment.Top,
+                TextColor3 = Theme["Color Dark Text"], 
+                TextTransparency = 1,
+                ZIndex = 11
+            })
+        end
+
+      
+        task.spawn(function()
+            
+            CreateTween({ Overlay, "BackgroundTransparency", 0.45, 0.35 })
+
+            if Logo then
+                CreateTween({ Logo, "ImageTransparency", 0, 0.3 })
+            end
+            CreateTween({ TitleLabel, "TextTransparency", 0, 0.3 })
+            if DescriptionLabel then
+                CreateTween({ DescriptionLabel, "TextTransparency", 0, 0.3 })
+            end
+
+            task.wait(1.5) 
+
+  
+            if Logo then
+                CreateTween({ Logo, "ImageTransparency", 1, 0.4 })
+            end
+            CreateTween({ TitleLabel, "TextTransparency", 1, 0.4 })
+            if DescriptionLabel then
+                CreateTween({ DescriptionLabel, "TextTransparency", 1, 0.4 })
+            end
+            CreateTween({ Overlay, "BackgroundTransparency", 1, 0.4 })
+
+            task.wait(0.4)
+            if Overlay and Overlay.Parent then
+                Overlay:Destroy()
+            end
+        end)
+    end
+
 	local TopBar = Create("Frame", Components, {
 		Size = UDim2.new(1, 0, 0, 28),
 		BackgroundTransparency = 1,
@@ -1783,7 +1883,7 @@ function redzlib:MakeWindow(Configs)
 		Name = "Buttons"
 	})
 	
-	local CloseButton = Instance.new("ImageButton")
+    local CloseButton = Instance.new("ImageButton")
     CloseButton.Size = UDim2.new(0, 18, 0, 18) 
     CloseButton.Position = UDim2.new(1, -10, 0.5)
     CloseButton.AnchorPoint = Vector2.new(1, 0.5)
@@ -3199,7 +3299,7 @@ end
 			function TextBox:Destroy() Button:Destroy() end
 			return TextBox
 		end
-	    function Tab:AddDiscordInvite(Configs)
+	function Tab:AddDiscordInvite(Configs)
         local Title = Configs[1] or Configs.Name or Configs.Title or "Discord"
         local Desc = Configs.Desc or Configs.Description or ""
         local Logo = Configs[2] or Configs.Logo or Configs.Icon or Configs.Image or ""

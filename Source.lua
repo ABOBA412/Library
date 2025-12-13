@@ -1221,34 +1221,60 @@ local function MakeDrag(Instance)
 			Active = true,
 			AutoButtonColor = false
 		})
-		
-		local DragStart, StartPos, InputOn
-		
-		local function Update(Input)
-			local delta = Input.Position - DragStart
-			local Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + delta.X / UIScale, StartPos.Y.Scale, StartPos.Y.Offset + delta.Y / UIScale)
-			
-			CreateTween({Instance, "Position", Position, 0.35})
+
+		local Dragging = false
+		local DragStart, StartPos
+		local MoveCon, EndCon
+
+		local function GetPos(Input)
+			if Input.UserInputType == Enum.UserInputType.Touch then
+				return Input.Position
+			end
+			return UserInputService:GetMouseLocation()
 		end
-		
-		Instance.MouseButton1Down:Connect(function()
-			InputOn = true
-		end)
-		
+
+		local function Update(CurrentPos)
+			local delta = CurrentPos - DragStart
+			Instance.Position = UDim2.new(
+				StartPos.X.Scale, StartPos.X.Offset + delta.X / UIScale,
+				StartPos.Y.Scale, StartPos.Y.Offset + delta.Y / UIScale
+			)
+		end
+
 		Instance.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+				Dragging = true
 				StartPos = Instance.Position
-				DragStart = Input.Position
-				
-				while UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do RunService.Heartbeat:Wait()
-					if InputOn then
-						Update(Input)
+				DragStart = GetPos(Input)
+
+				if MoveCon then MoveCon:Disconnect() end
+				if EndCon then EndCon:Disconnect() end
+
+				MoveCon = UserInputService.InputChanged:Connect(function(I)
+					if not Dragging then return end
+
+					if Input.UserInputType == Enum.UserInputType.Touch then
+						if I.UserInputType == Enum.UserInputType.Touch then
+							Update(I.Position)
+						end
+					else
+						if I.UserInputType == Enum.UserInputType.MouseMovement then
+							Update(UserInputService:GetMouseLocation())
+						end
 					end
-				end
-				InputOn = false
+				end)
+
+				EndCon = UserInputService.InputEnded:Connect(function(I)
+					if I.UserInputType == Enum.UserInputType.MouseButton1 or I.UserInputType == Enum.UserInputType.Touch then
+						Dragging = false
+						if MoveCon then MoveCon:Disconnect() MoveCon = nil end
+						if EndCon then EndCon:Disconnect() EndCon = nil end
+					end
+				end)
 			end
 		end)
 	end)
+
 	return Instance
 end
 
@@ -1776,6 +1802,15 @@ function redzlib:MakeWindow(Configs)
 		BackgroundTransparency = 1,
 		Name = "Top Bar"
 	})
+
+    local NotificationsHolder = Create("Frame", ScreenGui, {
+        Name = "NotificationsHolder",
+        AnchorPoint = Vector2.new(1, 1),
+        Position = UDim2.new(1, -10, 1, -10),
+        Size = UDim2.new(0, 300, 1, -20),
+        BackgroundTransparency = 1,
+        ClipsDescendants = false
+    })
 	
 	local Title = InsertTheme(Create("TextLabel", TopBar, {
 		Position = UDim2.new(0, 15, 0.5),
@@ -1915,29 +1950,23 @@ function redzlib:MakeWindow(Configs)
     stroke.Color = Color3.fromRGB(0,0,0)
     stroke.Thickness = 1
 
-
-    local defaultBgTransparency = 1
-    local hoverBgColor = Color3.fromRGB(92, 21, 21) 
-    local pressedBgColor = Color3.fromRGB(170, 40, 40) 
-
-
     CloseButton.MouseEnter:Connect(function()
-	    CloseButton.BackgroundColor3 = hoverBgColor
+	    CloseButton.BackgroundColor3 = Color3.fromRGB(92, 21, 21) 
 	    CloseButton.BackgroundTransparency = 0
     end)
 
     CloseButton.MouseLeave:Connect(function()
-	    CloseButton.BackgroundTransparency = defaultBgTransparency
+	    CloseButton.BackgroundTransparency = 1
     end)
 
     CloseButton.MouseButton1Down:Connect(function()
-	    CloseButton.BackgroundColor3 = pressedBgColor
+	    CloseButton.BackgroundColor3 = Color3.fromRGB(170, 40, 40) 
 	    CloseButton.BackgroundTransparency = 0
     end)
 
     CloseButton.MouseButton1Up:Connect(function()
 	    if CloseButton:IsMouseOver() then
-	    	CloseButton.BackgroundColor3 = hoverBgColor
+	    	CloseButton.BackgroundColor3 = Color3.fromRGB(92, 21, 21) 
 	    	CloseButton.BackgroundTransparency = 0
 	    else
 	    	CloseButton.BackgroundTransparency = defaultBgTransparency
@@ -1949,7 +1978,6 @@ function redzlib:MakeWindow(Configs)
 	Image = "rbxassetid://10734896206",
 	Name = "Minimize"
 })
-
 
     for _, conn in pairs(getconnections(MinimizeButton.MouseEnter)) do
         conn:Disconnect()
@@ -1964,33 +1992,27 @@ function redzlib:MakeWindow(Configs)
         conn:Disconnect()
     end
 
-
-    local defaultBgTransparency = 1
-    local hoverBgColor = Color3.fromRGB(111, 111, 117) 
-    local pressedBgColor = Color3.fromRGB(170, 170, 170) 
-
-
     MinimizeButton.MouseEnter:Connect(function()
-	    MinimizeButton.BackgroundColor3 = hoverBgColor
+	    MinimizeButton.BackgroundColor3 = Color3.fromRGB(111, 111, 117) 
 	    MinimizeButton.BackgroundTransparency = 0
     end)
 
     MinimizeButton.MouseLeave:Connect(function()
-	    MinimizeButton.BackgroundTransparency = defaultBgTransparency
+	    MinimizeButton.BackgroundTransparency = 1
     end)
 
 
     MinimizeButton.MouseButton1Down:Connect(function()
-	    MinimizeButton.BackgroundColor3 = pressedBgColor
+	    MinimizeButton.BackgroundColor3 = Color3.fromRGB(170, 170, 170)
 	    MinimizeButton.BackgroundTransparency = 0
     end)
 
     MinimizeButton.MouseButton1Up:Connect(function()
 	    if MinimizeButton:IsMouseOver() then
-	    	MinimizeButton.BackgroundColor3 = hoverBgColor
+	    	MinimizeButton.BackgroundColor3 = Color3.fromRGB(111, 111, 117) 
 	    	MinimizeButton.BackgroundTransparency = 0
 	    else
-	    	MinimizeButton.BackgroundTransparency = defaultBgTransparency
+	    	MinimizeButton.BackgroundTransparency = 1
 	    end
     end)
 
@@ -2090,27 +2112,26 @@ function redzlib:MakeWindow(Configs)
 		end
 	end
 
-local NOTIF_W, NOTIF_H, SPACING = 280, 60, 10
-local TOTAL_H = NOTIF_H + SPACING
 local ActiveNotifications = {}
 
-local NotificationsHolder = ScreenGui:FindFirstChild("NotificationsHolder")
-if not NotificationsHolder then
-    NotificationsHolder = Create("Frame", ScreenGui, {
-        Name = "NotificationsHolder",
-        AnchorPoint = Vector2.new(1, 1),
-        Position = UDim2.new(1, -10, 1, -10),
-        Size = UDim2.new(0, 300, 1, -20),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false
-    })
-end
+function Window:Notify(Configs)
+    local Title = Configs.Title or "Notification"
+    local Content = Configs.Content or "This is a Notification"
+    local Image = Configs.Image or ""
+    local Duration = Configs.Duration or 5
+    
+    local leftOffset = (Image ~= "" ) and (10 + 32 + 8) or 15
+    local rightPad = (Image ~= "" ) and 62 or 20
+    local maxTextWidth = math.max(10, 280 - leftOffset - rightPad)
 
-local function updatePositions()
+    local neededHeight = math.ceil(8 + math.max(1, math.ceil(TextService:GetTextSize(tostring(Title), 16, Enum.Font.GothamBold, Vector2.new(maxTextWidth, math.huge)).Y / math.max(1, TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000)).Y))) * TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000)).Y + math.ceil(TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000)).Y * 0.25) + math.max(1, math.ceil(TextService:GetTextSize(tostring(Content), 14, Enum.Font.Gotham, Vector2.new(maxTextWidth, math.huge)).Y / math.max(1, TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000)).Y))) * TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000)).Y + 8)
+    if neededHeight < 60 then neededHeight = 60 end
+    
+	local function updatePositions()
     local yOffset = 0
     for i, v in ipairs(ActiveNotifications) do
         
-        local h = NOTIF_H
+        local h = 60
         pcall(function()
             if v and v.Size and v.Size.Y and typeof(v.Size.Y.Offset) == "number" then
                 h = v.Size.Y.Offset
@@ -2118,77 +2139,28 @@ local function updatePositions()
         end)
         local y = -yOffset
         CreateTween({v, "Position", UDim2.new(1, -10, 1, y), 0.25})
-        yOffset = yOffset + h + SPACING
+        yOffset = yOffset + h + 10
     end
 end
 
+    local function formatTimeSeconds(totalSeconds)
+        totalSeconds = math.max(0, math.floor(totalSeconds + 0.0001))
 
-local function formatTimeSeconds(totalSeconds)
-    totalSeconds = math.max(0, math.floor(totalSeconds + 0.0001))
-    local hours = math.floor(totalSeconds / 3600)
-    local minutes = math.floor((totalSeconds % 3600) / 60)
-    local seconds = totalSeconds % 60
-
-    if hours > 0 then
-        if minutes > 0 then
-            return string.format("%dh %dm %ds", hours, minutes, seconds)
+        if math.floor(totalSeconds / 3600) > 0 then
+            if math.floor((totalSeconds % 3600) / 60) > 0 then
+                return string.format("%dh %dm %ds", math.floor(totalSeconds / 3600), math.floor((totalSeconds % 3600) / 60), totalSeconds % 60)
+            else
+                return string.format("%dh %dm %ds", math.floor(totalSeconds / 3600), math.floor((totalSeconds % 3600) / 60), totalSeconds % 60) 
+            end
+        elseif math.floor((totalSeconds % 3600) / 60) > 0 then
+           return string.format("%dm %ds", math.floor((totalSeconds % 3600) / 60), totalSeconds % 60)
         else
-            return string.format("%dh %dm %ds", hours, minutes, seconds) 
+            return string.format("%ds", totalSeconds % 60)
         end
-    elseif minutes > 0 then
-        return string.format("%dm %ds", minutes, seconds)
-    else
-        return string.format("%ds", seconds)
     end
-end
 
-function Window:Notify(Configs)
-    local Title = Configs.Title or "Notification"
-    local Content = Configs.Content or "This is a Notification"
-    local Image = Configs.Image or ""
-    local Duration = Configs.Duration or 5
-			
-    local paddingTop = 8
-    local paddingBottom = 8
-    local baseRightPad = 62 
-    local iconSize = 32
-    local iconLeft = 10
-
-    local leftOffset = (Image ~= "" ) and (iconLeft + iconSize + 8) or 15
-    local rightPad = (Image ~= "" ) and baseRightPad or 20
-    local maxTextWidth = math.max(10, NOTIF_W - leftOffset - rightPad)
-
-    
-    local sampleTitle = TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000))
-    local titleLineH = sampleTitle.Y
-    local sampleContent = TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000))
-    local contentLineH = sampleContent.Y
-
-    
-    local titleEstimate = TextService:GetTextSize(tostring(Title), 16, Enum.Font.GothamBold, Vector2.new(maxTextWidth, math.huge)).Y
-    local contentEstimate = TextService:GetTextSize(tostring(Content), 14, Enum.Font.Gotham, Vector2.new(maxTextWidth, math.huge)).Y
-
-    
-    local titleLines = math.max(1, math.ceil(titleEstimate / math.max(1, titleLineH)))
-    local contentLines = math.max(1, math.ceil(contentEstimate / math.max(1, contentLineH)))
-
-    
-    local maxLinesAllowed = 8 
-    if titleLines > maxLinesAllowed then titleLines = maxLinesAllowed end
-    if contentLines > maxLinesAllowed then contentLines = maxLinesAllowed end
-
-    local usedTitleH = titleLines * titleLineH
-    local usedContentH = contentLines * contentLineH
-
-    
-    local paddingBetween = math.ceil(contentLineH * 0.25)
-
-    local neededHeight = math.ceil(paddingTop + usedTitleH + paddingBetween + usedContentH + paddingBottom)
-    if neededHeight < NOTIF_H then neededHeight = NOTIF_H end
-
-    
     local Notif = InsertTheme(Create("Frame", NotificationsHolder, {
-        Size = UDim2.fromOffset(NOTIF_W, neededHeight),
+        Size = UDim2.fromOffset(280, neededHeight),
         Position = UDim2.new(1, 300, 1, 0),
         BackgroundTransparency = 0.1,
         BackgroundColor3 = Theme["Color Hub 2"],
@@ -2196,17 +2168,15 @@ function Window:Notify(Configs)
     }), "Hub2")
     Make("Corner", Notif)
     Make("Gradient", Notif, {Rotation = 45})
-
     
     if Image ~= "" then
         Create("ImageLabel", Notif, {
             Image = Image,
-            Size = UDim2.fromOffset(iconSize, iconSize),
-            Position = UDim2.new(0, iconLeft, 0.5, -iconSize/2),
+            Size = UDim2.fromOffset(32, 32),
+            Position = UDim2.new(0, 10, 0.5, -32/2),
             BackgroundTransparency = 1
         })
     end
-
     
     local TitleLabel = InsertTheme(Create("TextLabel", Notif, {
         Text = Title,
@@ -2214,61 +2184,56 @@ function Window:Notify(Configs)
         TextSize = 16,
         TextColor3 = Theme["Color Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(leftOffset, paddingTop),
-        Size = UDim2.fromOffset(maxTextWidth, math.ceil(usedTitleH)),
+        Position = UDim2.fromOffset(leftOffset, 8),
+        Size = UDim2.fromOffset(maxTextWidth, math.ceil(math.max(1, math.ceil(TextService:GetTextSize(tostring(Title), 16, Enum.Font.GothamBold, Vector2.new(maxTextWidth, math.huge)).Y / math.max(1, TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000)).Y))) * TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000)).Y)),
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top,
         TextWrapped = true
     }), "Text")
 
-    
     local ContentLabel = InsertTheme(Create("TextLabel", Notif, {
         Text = Content,
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextColor3 = Theme["Color Dark Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(leftOffset, paddingTop + usedTitleH + paddingBetween),
-        Size = UDim2.fromOffset(maxTextWidth, math.ceil(usedContentH)),
+        Position = UDim2.fromOffset(leftOffset, 8 + math.max(1, math.ceil(TextService:GetTextSize(tostring(Title), 16, Enum.Font.GothamBold, Vector2.new(maxTextWidth, math.huge)).Y / math.max(1, TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000)).Y))) * TextService:GetTextSize("Ay", 16, Enum.Font.GothamBold, Vector2.new(1000, 1000)).Y + math.ceil(TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000)).Y * 0.25)),
+        Size = UDim2.fromOffset(maxTextWidth, math.ceil(math.max(1, math.ceil(TextService:GetTextSize(tostring(Content), 14, Enum.Font.Gotham, Vector2.new(maxTextWidth, math.huge)).Y / math.max(1, TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000)).Y))) * TextService:GetTextSize("Ay", 14, Enum.Font.Gotham, Vector2.new(1000, 1000)).Y)),
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top,
         TextWrapped = true
     }), "DarkText")
 
-    
     local TimerLabel = InsertTheme(Create("TextLabel", Notif, {
         Text = formatTimeSeconds(Duration),
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextColor3 = Theme["Color Dark Text"],
         BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(NOTIF_W - 62, 6),
+        Position = UDim2.fromOffset(280 - 62, 6),
         Size = UDim2.fromOffset(44, 18),
         TextXAlignment = Enum.TextXAlignment.Right
     }), "DarkText")
 
     Notif.AnchorPoint = Vector2.new(1, 1)
     table.insert(ActiveNotifications, 1, Notif)
-
     
     updatePositions()
 
     local targetY = Notif.Position.Y.Offset
     CreateTween({Notif, "Position", UDim2.new(1, -10, 1, targetY), 0.40})
 
-    
     task.spawn(function()
-        local endTime = tick() + Duration
+        local endTime = tick() + Duration + 1
         while true do
             if not TimerLabel or not TimerLabel.Parent then break end
             local remain = math.max(0, endTime - tick())
             pcall(function() TimerLabel.Text = formatTimeSeconds(remain) end)
             if remain <= 0 then break end
-            task.wait(1)
+            task.wait()
         end
 
         if not Notif or not Notif.Parent then return end
-
         CreateTween({Notif, "Transparency", 1, 0.35})
         for _, child in ipairs(Notif:GetDescendants()) do
             if child:IsA("TextLabel") then
@@ -2285,6 +2250,7 @@ function Window:Notify(Configs)
         updatePositions()
     end)
 end
+
 
 	function Window:Dialog(Configs)
     if MainFrame:FindFirstChild("Dialog") then return end
@@ -3234,71 +3200,344 @@ end
 			return Slider
 		end
 		function Tab:AddTextBox(Configs)
-			local TName = Configs[1] or Configs.Name or Configs.Title or "Text Box"
-			local TDesc = Configs.Desc or Configs.Description or ""
-			local TDefault = Configs[2] or Configs.Default or ""
-			local TPlaceholderText = Configs[5] or Configs.PlaceholderText or "Input"
-			local TClearText = Configs[3] or Configs.ClearText or false
-			local Callback = Funcs:GetCallback(Configs, 4)
-			
-			if type(TDefault) ~= "string" or TDefault:gsub(" ", ""):len() < 1 then
-				TDefault = false
-			end
-			
-			local Button, LabelFunc = ButtonFrame(Container, TName, TDesc, UDim2.new(1, -38))
-			
-			local SelectedFrame = InsertTheme(Create("Frame", Button, {
-				Size = UDim2.new(0, 150, 0, 18),
-				Position = UDim2.new(1, -10, 0.5),
-				AnchorPoint = Vector2.new(1, 0.5),
-				BackgroundColor3 = Theme["Color Stroke"]
-			}), "Stroke")Make("Corner", SelectedFrame, UDim.new(0, 4))
-			
-			local TextBoxInput = InsertTheme(Create("TextBox", SelectedFrame, {
-				Size = UDim2.new(0.85, 0, 0.85, 0),
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.new(0.5, 0, 0.5, 0),
-				BackgroundTransparency = 1,
-				Font = Enum.Font.GothamBold,
-				TextScaled = true,
-				TextColor3 = Theme["Color Text"],
-				ClearTextOnFocus = TClearText,
-				PlaceholderText = TPlaceholderText,
-				Text = ""
-			}), "Text")
-			
-			local Pencil = Create("ImageLabel", SelectedFrame, {
-				Size = UDim2.new(0, 12, 0, 12),
-				Position = UDim2.new(0, -5, 0.5),
-				AnchorPoint = Vector2.new(1, 0.5),
-				Image = "rbxassetid://15637081879",
-				BackgroundTransparency = 1
-			})
-			
-			local TextBox = {}
-			local function Input()
-				local Text = TextBoxInput.Text
-				if Text:gsub(" ", ""):len() > 0 then
-					if TextBox.OnChanging then Text = TextBox.OnChanging(Text) or Text end
-					Funcs:FireCallback(Callback, Text)
-					TextBoxInput.Text = Text
+		local TName = Configs[1] or Configs.Name or Configs.Title or "Text Box"
+		local TDesc = Configs.Desc or Configs.Description or ""
+		local TDefault = Configs[2] or Configs.Default or ""
+		local TPlaceholderText = Configs[5] or Configs.PlaceholderText or "Input"
+		local TClearText = Configs[3] or Configs.ClearText or false
+		local Callback = Funcs:GetCallback(Configs, 4)
+		local Flag = Configs[6] or Configs.Flag or false
+
+		if type(TDefault) ~= "string" then
+			TDefault = ""
+		end
+
+		if Flag and CheckFlag(Flag) and type(GetFlag(Flag)) == "string" then
+			TDefault = GetFlag(Flag)
+		end
+		if Flag and (not CheckFlag(Flag) or GetFlag(Flag) == nil) then
+			SetFlag(Flag, TDefault)
+		end
+
+		local Button, LabelFunc = ButtonFrame(Container, TName, TDesc, UDim2.new(1, -170))
+
+		task.defer(function()
+			for _, obj in ipairs(Button:GetDescendants()) do
+				if obj:IsA("TextLabel") then
+					obj.TextWrapped = true
+					obj.TextTruncate = Enum.TextTruncate.None
 				end
 			end
-			
-			TextBoxInput.FocusLost:Connect(Input)Input()
-			
-			TextBoxInput.FocusLost:Connect(function()
-				CreateTween({Pencil, "ImageColor3", Color3.fromRGB(255, 255, 255), 0.2})
-			end)
-			TextBoxInput.Focused:Connect(function()
-				CreateTween({Pencil, "ImageColor3", Theme["Color Theme"], 0.2})
-			end)
-			
-			TextBox.OnChanging = false
-			function TextBox:Visible(...) Funcs:ToggleVisible(Button, ...) end
-			function TextBox:Destroy() Button:Destroy() end
-			return TextBox
+		end)
+
+		local SelectedFrame = InsertTheme(Create("Frame", Button, {
+			Size = UDim2.new(0, 150, 0, 18),
+			Position = UDim2.new(1, -10, 0.5),
+			AnchorPoint = Vector2.new(1, 0.5),
+			BackgroundColor3 = Theme["Color Stroke"]
+		}), "Stroke")Make("Corner", SelectedFrame, UDim.new(0, 4))
+
+		local TextBoxInput = InsertTheme(Create("TextBox", SelectedFrame, {
+			Size = UDim2.new(0.85, 0, 0.85, 0),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			BackgroundTransparency = 1,
+			Font = Enum.Font.GothamBold,
+			TextScaled = true,
+			TextColor3 = Theme["Color Text"],
+			ClearTextOnFocus = TClearText,
+			PlaceholderText = TPlaceholderText,
+			Text = ""
+		}), "Text")
+
+		local Pencil = Create("ImageLabel", SelectedFrame, {
+			Size = UDim2.new(0, 12, 0, 12),
+			Position = UDim2.new(0, -5, 0.5),
+			AnchorPoint = Vector2.new(1, 0.5),
+			Image = "rbxassetid://15637081879",
+			BackgroundTransparency = 1
+		})
+
+		local TextBox = {}
+		local function Input()
+			local Text = TextBoxInput.Text
+			if type(Text) ~= "string" then Text = "" end
+			if TextBox.OnChanging then Text = TextBox.OnChanging(Text) or Text end
+			TextBoxInput.Text = Text
+			if Flag then SetFlag(Flag, Text) end
+			Funcs:FireCallback(Callback, Text)
 		end
+
+		TextBoxInput.FocusLost:Connect(Input)
+		TextBoxInput.FocusLost:Connect(function()
+			CreateTween({Pencil, "ImageColor3", Color3.fromRGB(255, 255, 255), 0.2})
+		end)
+		TextBoxInput.Focused:Connect(function()
+			CreateTween({Pencil, "ImageColor3", Theme["Color Theme"], 0.2})
+		end)
+
+		TextBox.OnChanging = false
+		function TextBox:Set(text) TextBoxInput.Text = tostring(text or "") Input() end
+		function TextBox:Get() return TextBoxInput.Text end
+		function TextBox:Callback(Func) Funcs:InsertCallback(Callback, Func) end
+		function TextBox:Visible(...) Funcs:ToggleVisible(Button, ...) end
+		function TextBox:Destroy() Button:Destroy() end
+
+		TextBoxInput.Text = TDefault
+		Input()
+		return TextBox
+	end
+		function Tab:AddColorPicker(Configs)
+    	local Name = Configs[1] or Configs.Name or Configs.Title or "Color Picker"
+    	local Desc = Configs.Desc or Configs.Description or ""
+    	local Default = Configs[2] or Configs.Default or Color3.fromRGB(255, 255, 255)
+    	local Callback = Funcs:GetCallback(Configs, 3)
+    	local Flag = Configs[4] or Configs.Flag or false
+
+    	local function EncodeColor(c)
+        	return { type = "Color3", g = c.G, r = c.R, b = c.B }
+    	end
+
+    	local function DecodeColor(v)
+        	if typeof(v) == "Color3" then
+            	return v
+       		end
+        	if type(v) == "table" and v.type == "Color3" then
+            	return Color3.new(v.r or 1, v.g or 1, v.b or 1)
+        	end
+        	return nil
+    	end
+
+    	if Flag and CheckFlag(Flag) then
+        	local decoded = DecodeColor(GetFlag(Flag))
+        	if decoded then
+            	Default = decoded
+        	end
+    	end
+
+    	if Flag and not CheckFlag(Flag) then
+        	SetFlag(Flag, EncodeColor(Default))
+    	end
+
+    	local Button, LabelFunc = ButtonFrame(Container, Name, Desc, UDim2.new(1, -70))
+
+    	local CapsuleHolder = InsertTheme(Create("Frame", Button, {
+        	Size = UDim2.new(0, 40, 0, 18),
+        	Position = UDim2.new(1, -10, 0.5),
+        	AnchorPoint = Vector2.new(1, 0.5),
+        	BackgroundColor3 = Theme["Color Stroke"]
+    	}), "Stroke")
+    	Make("Corner", CapsuleHolder, UDim.new(0.5, 0))
+
+    	local Preview = Create("TextButton", CapsuleHolder, {
+        	Size = UDim2.new(1, -6, 1, -6),
+        	Position = UDim2.new(0.5, 0, 0.5, 0),
+        	AnchorPoint = Vector2.new(0.5, 0.5),
+        	BackgroundColor3 = Default,
+        	BorderSizePixel = 0,
+        	AutoButtonColor = false,
+        	Text = ""
+    	})
+    	Make("Corner", Preview, UDim.new(0, 4))
+    	Make("Stroke", Preview)
+
+    	local Popup = InsertTheme(Create("Frame", Container, {
+        	Name = "Option",
+        	Size = UDim2.new(1, -20, 0, 190),
+        	BackgroundColor3 = Theme["Color Hub 2"],
+        	BorderSizePixel = 0,
+        	Visible = false,
+        	ZIndex = Container.ZIndex
+    	}), "Hub2")
+    	Make("Corner", Popup, UDim.new(0, 6))
+    	Make("Stroke", Popup)
+
+    	Popup.LayoutOrder = (Button.LayoutOrder or 0) + 1
+
+    	local SV = Create("ImageButton", Popup, {
+        	Position = UDim2.new(0, 10, 0, 10),
+        	Size = UDim2.new(0, 150, 0, 150),
+        	AutoButtonColor = false,
+        	BackgroundColor3 = Default,
+        	Image = "rbxassetid://4155801252",
+        	BorderSizePixel = 0,
+        	ZIndex = Popup.ZIndex
+   		})
+    	Make("Corner", SV, UDim.new(0, 4))
+
+    	local SVDot = Create("Frame", SV, {
+        	Size = UDim2.new(0, 6, 0, 6),
+        	AnchorPoint = Vector2.new(0.5, 0.5),
+        	BackgroundColor3 = Color3.new(1, 1, 1),
+        	BorderSizePixel = 0,
+        	ZIndex = SV.ZIndex
+    	})
+    	Make("Corner", SVDot, UDim.new(1, 0))
+
+    	local HueHolder = Create("Frame", Popup, {
+        	Position = UDim2.new(0, 170, 0, 10),
+        	Size = UDim2.new(0, 20, 0, 150),
+        	BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        	BorderSizePixel = 0,
+        	ZIndex = Popup.ZIndex
+    	})
+   		Make("Corner", HueHolder, UDim.new(0, 4))
+    	Make("Stroke", HueHolder)
+
+    	Create("UIGradient", HueHolder, {
+        	Rotation = 90,
+        	Color = ColorSequence.new({
+            	ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255,   0,   4)),
+            	ColorSequenceKeypoint.new(0.20, Color3.fromRGB(234, 255,   0)),
+            	ColorSequenceKeypoint.new(0.40, Color3.fromRGB( 21, 255,   0)),
+            	ColorSequenceKeypoint.new(0.60, Color3.fromRGB(  0, 255, 255)),
+            	ColorSequenceKeypoint.new(0.80, Color3.fromRGB(  0,  17, 255)),
+            	ColorSequenceKeypoint.new(0.90, Color3.fromRGB(255,   0, 251)),
+            	ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255,   0,   4)),
+        	})
+    	})
+
+    	local HueButton = Create("TextButton", HueHolder, {
+       		Size = UDim2.new(1, 0, 1, 0),
+        	BackgroundTransparency = 1,
+        	Text = "",
+        	AutoButtonColor = false,
+        	ZIndex = HueHolder.ZIndex
+    	})
+
+    	local HueDot = Create("Frame", HueHolder, {
+        	Size = UDim2.new(1, 2, 0, 2),
+        	AnchorPoint = Vector2.new(0.5, 0.5),
+        	BackgroundColor3 = Color3.new(1, 1, 1),
+        	BorderSizePixel = 0,
+        	ZIndex = HueHolder.ZIndex
+    	})
+
+    	local h, s, v = Default:ToHSV()
+    	local draggingSV = false
+    	local draggingHue = false
+
+    	local function ApplyColor()
+        	local color = Color3.fromHSV(h, s, v)
+        	Preview.BackgroundColor3 = color
+        	SV.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+
+        	if Flag then
+            	SetFlag(Flag, EncodeColor(color))
+        	end
+
+        	Funcs:FireCallback(Callback, color)
+    	end
+
+    	local function UpdateDots()
+        	SVDot.Position = UDim2.new(s, 0, 1 - v, 0)
+        	HueDot.Position = UDim2.new(0.5, 0, h, 0)
+    	end
+
+    	local function ToVector2(position)
+        	if typeof(position) == "Vector3" then
+            	return Vector2.new(position.X, position.Y)
+       		end
+        	return position
+    	end
+
+    	local function UpdateSV(inputPosition)
+        	local pos2 = ToVector2(inputPosition)
+        	local relative = pos2 - SV.AbsolutePosition
+
+        	local x = math.clamp(relative.X / SV.AbsoluteSize.X, 0, 1)
+        	local y = math.clamp(relative.Y / SV.AbsoluteSize.Y, 0, 1)
+
+        	s = x
+        	v = 1 - y
+
+        	UpdateDots()
+        	ApplyColor()
+    	end
+
+    	local function UpdateHue(inputPosition)
+        	local pos2 = ToVector2(inputPosition)
+        	local relativeY = pos2.Y - HueHolder.AbsolutePosition.Y
+     
+        	h =  math.clamp(relativeY / HueHolder.AbsoluteSize.Y, 0, 1)
+
+        	UpdateDots()
+        	ApplyColor()
+    	end
+
+    	SV.InputBegan:Connect(function(input)
+        	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            	draggingSV = true
+            	UpdateSV(input.Position)
+        	end
+    	end)
+
+    	HueButton.InputBegan:Connect(function(input)
+        	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            	draggingHue = true
+            	UpdateHue(input.Position)
+        	end
+    	end)
+
+    	UserInputService.InputEnded:Connect(function(input)
+        	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            	draggingSV = false
+            	draggingHue = false
+        	end
+    	end)
+
+    	UserInputService.InputChanged:Connect(function(input)
+        	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            	if draggingSV then
+                	UpdateSV(input.Position)
+            	elseif draggingHue then
+                	UpdateHue(input.Position)
+            	end
+        	end
+    	end)
+
+    	UpdateDots()
+    	ApplyColor()
+
+    	local function TogglePopup()
+        	Popup.Visible = not Popup.Visible
+    	end
+
+    	Button.InputBegan:Connect(function(input)
+        	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            	TogglePopup()
+        	end
+    	end)
+
+    	Preview.MouseButton1Click:Connect(TogglePopup)
+
+    	local ColorPicker = {}
+
+    	function ColorPicker:Visible(...)
+        	Funcs:ToggleVisible(Button, ...)
+        	Funcs:ToggleVisible(Popup, ...)
+    	end
+
+    	function ColorPicker:Destroy()
+        	Popup:Destroy()
+        	Button:Destroy()
+    	end
+
+    	function ColorPicker:Set(Color)
+        	if typeof(Color) ~= "Color3" then
+            	return
+        	end
+        	h, s, v = Color:ToHSV()
+        	UpdateDots()
+        	ApplyColor()
+    	end
+
+    	function ColorPicker:Callback(Func)
+        	Funcs:InsertCallback(Callback, Func)
+    	end
+
+    	return ColorPicker
+	end
 	function Tab:AddDiscordInvite(Configs)
         local Title = Configs[1] or Configs.Name or Configs.Title or "Discord"
         local Desc = Configs.Desc or Configs.Description or ""
@@ -3308,29 +3547,29 @@ end
         local OnlineCount = Configs.Online or Configs.MembersOnline
         local MemberCount = Configs.Members or Configs.TotalMembers
 
-        local function FormatNum(n)
-             n = tonumber(n)
-             if not n then return "0" end
-             local s = tostring(math.floor(n + 0.5))
-             return s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
-         end
+    local function FormatNum(n)
+        n = tonumber(n)
+        if not n then return "0" end
+        local s = tostring(math.floor(n + 0.5))
+        return s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+    end
 
-         local InviteHolder = Create("Frame", Container, {
-              Size = UDim2.new(1, 0, 0, 148),
-              Name = "Option",
-              BackgroundTransparency = 1
-         })
+    local InviteHolder = Create("Frame", Container, {
+        Size = UDim2.new(1, 0, 0, 148),
+        Name = "Option",
+        BackgroundTransparency = 1
+    })
 
-         local InviteLabel = Create("TextLabel", InviteHolder, {
-              Size = UDim2.new(1, -10, 0, 15),
-              Position = UDim2.new(0, 5, 0, 0),
-              TextColor3 = Color3.fromRGB(40, 150, 255),
-              Font = Enum.Font.GothamMedium,
-              TextXAlignment = Enum.TextXAlignment.Left,
-              BackgroundTransparency = 1,
-              TextSize = 9,
-              Text = Invite ~= "" and Invite or "https://discord.gg/"
-         })
+    local InviteLabel = Create("TextLabel", InviteHolder, {
+        Size = UDim2.new(1, -10, 0, 15),
+        Position = UDim2.new(0, 5, 0, 0),
+        TextColor3 = Color3.fromRGB(40, 150, 255),
+        Font = Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        BackgroundTransparency = 1,
+        TextSize = 9,
+        Text = Invite ~= "" and Invite or "https://discord.gg/"
+    })
 
     local FrameHolder = InsertTheme(Create("Frame", InviteHolder, {
         Size = UDim2.new(0, 178, 1, -15),
@@ -3364,7 +3603,6 @@ end
         BorderSizePixel = 0
     })
   
-    
     local BannerCorner = Instance.new("UICorner")
     BannerCorner.CornerRadius = UDim.new(0, 10)
     BannerCorner.Parent = BannerFrame
@@ -3397,7 +3635,6 @@ end
         })
     end
 
-   
     local ImageLabel = Create("ImageLabel", FrameHolder, {
         Size = UDim2.new(0, 33, 0, 33),
         Position = UDim2.new(0, 10, 0.28, 0),
@@ -3412,7 +3649,6 @@ end
         Thickness = 2.2,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
-
     
     local LTitle = InsertTheme(Create("TextLabel", FrameHolder, {
         Size = UDim2.new(1, -10, 0, 10),
@@ -3425,8 +3661,6 @@ end
         Text = Title
     }), "Text")
 
-    
-    local StatsFrame
     if OnlineCount or MemberCount then
         StatsFrame = Create("Frame", FrameHolder, {
             Size = UDim2.new(1, -10, 0, 9),

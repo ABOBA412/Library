@@ -1027,7 +1027,7 @@ local SetProps, SetChildren, InsertTheme, Create do
 		end
 	end
 	
-	pcall(Save, "redz library V5.json")
+	pcall(Save, "redz library V7.json")
 end
 
 local Funcs = {} do
@@ -1153,8 +1153,7 @@ local GetFlag, SetFlag, CheckFlag do
 			db=true;task.wait(0.1);db=false
 			
 			local Success, Encoded = pcall(function()
-				-- local _Flags = {}
-				-- for _,Flag in pairs(Flags) do _Flags[_] = Flag.Value end
+		
 				return HttpService:JSONEncode(Flags)
 			end)
 			
@@ -1169,7 +1168,7 @@ local GetFlag, SetFlag, CheckFlag do
 end
 
 local ScreenGui = Create("ScreenGui", CoreGui, {
-	Name = "redz Library V5",
+	Name = "redz Library V7",
 }, {
 	Create("UIScale", {
 		Scale = UIScale,
@@ -1474,7 +1473,7 @@ function redzlib:SetTheme(NewTheme)
 	if not VerifyTheme(NewTheme) then return end
 		
 	redzlib.Save.Theme = NewTheme
-	SaveJson("redz library V5.json", redzlib.Save)
+	SaveJson("redz library V7.json", redzlib.Save)
 	Theme = redzlib.Themes[NewTheme]
 
 	
@@ -1658,13 +1657,13 @@ function redzlib:MakeWindow(Configs)
     local WTitle = Configs[1] or Configs.Name or Configs.Title
     local WMiniText = Configs[2] or Configs.SubTitle
 
-    local StartWindowEnabled = Configs.StartWindow or false
-    local StartWindowTitle = Configs.StartWindowTitle or WTitle or ""
-    local StartWindowDescription = Configs.StartWindowDescription or ""
-    local StartWindowImage = Configs.StartWindowImage or ""
+    local IntroductionEnabled = Configs.Introduction or false
+    local IntroductionTitle = Configs.IntroductionTitle or WTitle or ""
+    local IntroductionDescription = Configs.IntroductionDescription or ""
+    local IntroductionImage = Configs.IntroductionImage or ""
 
-    if StartWindowImage and StartWindowImage ~= "" then
-        StartWindowImage = redzlib:GetIcon(StartWindowImage)
+    if IntroductionImage and IntroductionImage ~= "" then
+        IntroductionImage = redzlib:GetIcon(StartWindowImage)
     end
 
     Settings.ScriptFile = Configs[3] or Configs.SaveFolder or false
@@ -1705,7 +1704,7 @@ function redzlib:MakeWindow(Configs)
 	local DropdownHolder = Create("Folder", ScreenGui, {
 		Name = "Dropdown"
 	})
-	if StartWindowEnabled then
+	if IntroductionEnabled then
         local Overlay = Create("Frame", MainFrame, {
             Name = "StartWindowOverlay",
             Size = UDim2.fromScale(1, 1),
@@ -1717,14 +1716,14 @@ function redzlib:MakeWindow(Configs)
         })
         Make("Corner", Overlay, UDim.new(0, 8)) 
 
-        if StartWindowImage and StartWindowImage ~= "" then
+        if IntroductionImage and IntroductionImage ~= "" then
             Logo = Create("ImageLabel", Overlay, {
                 Name = "StartLogo",
                 BackgroundTransparency = 1,
                 Size = UDim2.fromOffset(80, 80), 
                 AnchorPoint = Vector2.new(0.5, 1),
                 Position = UDim2.new(0.5, 0, 0.5, -8),
-                Image = StartWindowImage,
+                Image = IntroductionImage,
                 ImageTransparency = 1,
                 ZIndex = 11
             })
@@ -1736,7 +1735,7 @@ function redzlib:MakeWindow(Configs)
             AnchorPoint = Vector2.new(0.5, 0),
             Position = UDim2.new(0.5, 0, 0.5, 12),
             AutomaticSize = Enum.AutomaticSize.XY,
-            Text = StartWindowTitle,
+            Text = IntroductionTitle,
             Font = Enum.Font.GothamMedium,
             TextSize = 14, 
             TextXAlignment = Enum.TextXAlignment.Center,
@@ -1747,14 +1746,14 @@ function redzlib:MakeWindow(Configs)
         }), "Text")
 
 
-        if StartWindowDescription ~= "" then
+        if IntroductionDescription ~= "" then
             DescriptionLabel = Create("TextLabel", Overlay, {
                 Name = "StartDescription",
                 BackgroundTransparency = 1,
                 AnchorPoint = Vector2.new(0.5, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 32),
                 AutomaticSize = Enum.AutomaticSize.XY,
-                Text = StartWindowDescription,
+                Text = IntroductionDescription,
                 Font = Enum.Font.Gotham,
                 TextSize = 12,
                 TextXAlignment = Enum.TextXAlignment.Center,
@@ -1905,13 +1904,13 @@ function redzlib:MakeWindow(Configs)
 	ConnectSave(ControlSize1, function()
 		if not Minimized then
 			redzlib.Save.UISize = {MainFrame.Size.X.Offset, MainFrame.Size.Y.Offset}
-			SaveJson("redz library V5.json", redzlib.Save)
+			SaveJson("redz library V7.json", redzlib.Save)
 		end
 	end)
 	
 	ConnectSave(ControlSize2, function()
 		redzlib.Save.TabSize = MainScroll.Size.X.Offset
-		SaveJson("redz library V5.json", redzlib.Save)
+		SaveJson("redz library V7.json", redzlib.Save)
 	end)
 	
 	local ButtonsFolder = Create("Folder", TopBar, {
@@ -3589,8 +3588,7 @@ end
     BackgroundColor3 = Theme["Color Hub 2"],
     ClipsDescendants = true,
 }), "Frame")
-
-
+				
     local cardCorner = Instance.new("UICorner")
     cardCorner.CornerRadius = UDim.new(0, 10) 
     cardCorner.Parent = FrameHolder

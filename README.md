@@ -61,7 +61,7 @@ local Tab1 = Window:MakeTab({"Um", "cherry"})
 ```
 ## Start Tab
 ```lua
-Window:SelectTab(Tab1) -- Стартовый таб.
+Window:SelectTab(Tab1) 
 ```
 ## Section
 ```lua

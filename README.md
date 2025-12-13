@@ -1,48 +1,50 @@
-Пользовательский интерфейс redz Hub 
+UI redz Hub 
 
-📌 Данный пользовательский интерфейс используется в скриптах redz Hub но он был переписан, и оптимизирован для общего пользования.
+redz Library V7
 
-🔹 Почему стоит выбрать именно этот пользовательский интерфейс? 
+📌 This user interface is used in redz Hub scripts, but it has been rewritten and optimized.
+
+🔹 why choose this UI?? 
 
 - Красивый.
 
-- Удобный в использовании.
+- Easy to use.
 
-- есть куча фишек и того, чего нет в других пользовательских интерфейсах.
+- There are a lot of features that other UI don't have.
 
-🔹 Открытый исходный код, легкий и оптимизированный.
+🔹 Open Source Easy and optimize.
 
-Далее я расскажу как использовать этот пользовательский интерфейс.
+Next, I'll tell you how to use this UI..
 
-🚀 Начало работы
+🚀 Start work
 
-Чтобы загрузить UI есть 2 варианта: 1 через loadstring 2 локально
+There are 2 options to load the UI: 1 via loadstring and 2 locally.
 
-## 1 Способ через loadstring
+## 1 Option loadstring
 ```lua
 local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/ABOBA412/Library/refs/heads/main/Source.lua"))()
 ```
-# 2 Способ локальный
+# 2 Option locally
 ```lua
 local success, redzlib = pcall(function()
 -- Вставьте сюда содержимое пользовательского интерфейса.
 end)
 ```
 
-## Окно
+## Window
 ```lua
 local Window = redzlib:MakeWindow({
   Title = "redz Hub : Blox Fruits",
   SubTitle = "by redz9999",
-  SaveFolder = "redz_hub" -- название Json файла с сохранениями Flag ов
-  StartWindow = true, -- true/false
-  StartWindowTitle = "redz Hub",
-  StartWindowDescription = "the best script",
-  StartWindowImage = "rbxassetid://18751483361" 
+  SaveFolder = "redz_hub", -- название Json файла с сохранениями Flag ов
+  Introduction = true,
+  IntroductionTitle = "redz Hub",
+  IntroductionDescription = "the best script",
+  IntroductionImage = "rbxassetid://18751483361" 
 })
 ```
 
-## Кнопка для сворачивания
+## Minimize Button & Minimizer
 ```lua
 local Minimizer = Window:NewMinimizer({
   KeyCode = Enum.KeyCode.LeftControl
@@ -53,7 +55,48 @@ Window:AddMinimizeButton({
 })
 ```
 
-## Приглашение в Discord
+## Tab
+```lua
+local Tab1 = Window:MakeTab({"Um", "cherry"})
+```
+## Start Tab
+```lua
+Window:SelectTab(Tab1) -- Стартовый таб.
+```
+## Section
+```lua
+local Section = Tab1:AddSection({"Section"})
+```
+
+## Paragraph
+```lua
+Tab1:AddParagraph({"Paragraph", "This is a Paragraph\nSecond Line"})
+```
+## Dialog
+```lua
+  Window:Dialog({
+    Title = "???",
+    Text = "Do you like cats?",
+    Options = {
+      {"Yes", function()
+        print("Yes")
+      end},
+      {"No", function()
+        print("No")
+      end}
+    }
+  })
+```
+## Notify
+```lua
+Window:Notify({
+  Title = "Notification",
+  Content = "this is a Notification",
+  Image = "rbxassetid://10734953451", -- Image.
+  Duration = 5 
+})
+```
+## Discord Invite
 ```lua
 Tab1:AddDiscordInvite({
 	Title = "Name Hub",
@@ -65,50 +108,19 @@ Tab1:AddDiscordInvite({
 	Online = 20000, -- Optional
 })
 ```
-
-
-## Таб
+## ColorPicker
 ```lua
-local Tab1 = Window:MakeTab({"Um", "cherry"})
-```
-## Стартовый таб
-```lua
-Window:SelectTab(Tab1) -- Стартовый таб.
-```
-## Секция
-```lua
-local Section = Tab1:AddSection({"Section"}) -- Секция.
-```
-
-## Параграф
-```lua
-Tab1:AddParagraph({"Paragraph", "This is a Paragraph\nSecond Line"})
-```
-## Диалог
-```lua
-  Window:Dialog({
-    Title = "???",
-    Text = "Ты любишь котиков?",
-    Options = {
-      {"Да", function()
-        print("Да")
-      end},
-      {"Нет", function()
-        print("Нет")
-      end}
-    }
-  })
-```
-## Уведомление
-```lua
-Window:Notify({
-  Title = "Notification",
-  Content = "this is a Notification",
-  Image = "rbxassetid://10734953451", -- Иконка.
-  Duration = 5 -- Время, через которое пропадет уведомление.
+Tab1:AddColorPicker({
+    Title = "My Color",
+    Description = "Select the Color",
+    Default = Color3.fromRGB(0, 0, 0),
+	Flag = "MyColor",
+    Callback = function(v)
+        
+    end
 })
 ```
-## Кнопка 1 
+## Button 1 
 ```lua
 Tab1:AddButton({"Print", function(Value)
 print("Hello World!")
@@ -118,18 +130,15 @@ end})
 ```lua
 local Toggle1 = Tab1:AddToggle({
   Name = "Auto Farm Level",
-  Description = "Auto Farming Level", -- Описание.
-  Flag = "Auto Farm Level" -- Отвечает за состояние toggle после перезапуска скрипта включено/выключено
+  Description = "Auto Farming Level", -- Desc
+  Flag = "Auto Farm Level" -- Responsible for the toggle status after restarting the script on/off
   Default = false 
 })
 Toggle1:Callback(function(Value)
 -- IsFarming = Value 
 end)
 ```
-
-
-
-## Toggle 2 ( Компактный с другим callback )
+## Toggle 2 ( Compact another callback )
 ```lua
 Tab1:AddToggle({
     Name = "Auto Farm Nearest",
@@ -140,25 +149,21 @@ Tab1:AddToggle({
     end
 })
 ```
-
-
-
-## Слайдер
+## slider
 ```lua
 Tab1:AddSlider({
   Name = "Tween Speed",
-  Min = 1, -- Минимальное значение.
-  Max = 100, -- Максимальное значение.
+  Min = 1, -- Min meaning.
+  Max = 100, -- Max meaning.
   Flag = "Tween Speed",
   Increase = 1,
   Default = 16,
   Callback = function(State)
-  G.TweenSpeed = State
+  _G.TweenSpeed = State
   end
 })
 ```
-
-## Dropdown 1 ( Обычный )
+## Dropdown 1 ( Defaukt )
 ```lua
 Tab1:AddDropdown({
   Name = "Players List",
@@ -175,7 +180,7 @@ Tab1:AddDropdown({
 ```lua
 Tab1:AddDropdown({
   Name = "Dropdown",
-  MultiSelect = true, -- Позволяет выбирать несколько опций.
+  MultiSelect = true, -- Allows to select multiple options.
   Options = {"one", "two", "three", "four", "five"},
   Default = {"one", "four"},
   Callback = function(Value)
@@ -187,37 +192,11 @@ Tab1:AddDropdown({
 ```lua
 Tab1:AddTextBox({
   Name = "Name item",
-  Description = "1 Item on 1 Server", 
+  Description = "1 Item on 1 Server",
+  Flag = "Name item",
   PlaceholderText = "item only",
   Callback = function(Value)
     
   end
 })
 ```
-## Объяснение что для чего нужно
-- 1 Секция просто заголовок.
-- 2 Toggle переключатель для скрипта который например включает/выключает авто фарм.
-- 3 Dropdown выберите опцию для скрипта например способ телепорта.
-- 4 Кнопка при нажатии исполняет заданный код например телепортирует вас в нужную точку.
-- 5 Слайдер Выберите значение для скрипта, например скорость спид хака.
-- 6 TextBox запишите значение, например имя сервера на который надо телепортироваться.
-- 7 Приглашение в Discord копируйте ссылку на дискорд сервер.
-  
-так же вы можете самостоятельно настраивать значения например в toggle то есть убрать Flag и Description использовать компактный callback и тд.
-## Как создавать Toggle ы и тд в Табах?
-Создайте таб, например Tab2
-
-А потом создайте Tab2AddToggle({
-
-Все просто!
-
-## Остальное
-
-Если вы хотите, сделать текст цветным, просто используйте это
-
-## 
-```txt
-<font color='rgb(255, 255, 255)'>Тут текст, который надо сделать цветным</font>
-```
-rgb(255, 255, 255) Цвет текста, в данном случае тут стоит 255,255,255 что даст белый цвет.
-

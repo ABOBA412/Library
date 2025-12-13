@@ -1663,7 +1663,7 @@ function redzlib:MakeWindow(Configs)
     local IntroductionImage = Configs.IntroductionImage or ""
 
     if IntroductionImage and IntroductionImage ~= "" then
-        IntroductionImage = redzlib:GetIcon(StartWindowImage)
+        IntroductionImage = redzlib:GetIcon(IntroductionImage)
     end
 
     Settings.ScriptFile = Configs[3] or Configs.SaveFolder or false
@@ -1706,7 +1706,7 @@ function redzlib:MakeWindow(Configs)
 	})
 	if IntroductionEnabled then
         local Overlay = Create("Frame", MainFrame, {
-            Name = "StartWindowOverlay",
+            Name = "IntroductionOverlay",
             Size = UDim2.fromScale(1, 1),
             Position = UDim2.fromScale(0, 0),
             BackgroundTransparency = 1, 

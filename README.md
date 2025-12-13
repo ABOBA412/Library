@@ -6,7 +6,7 @@ redz Library V7
 
 🔹 why choose this UI?? 
 
-- Красивый.
+- Beautiful.
 
 - Easy to use.
 

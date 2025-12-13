@@ -27,7 +27,7 @@ local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/ABOBA
 # 2 Option locally
 ```lua
 local success, redzlib = pcall(function()
--- Вставьте сюда содержимое пользовательского интерфейса.
+-- Paste the UI content here.
 end)
 ```
 
@@ -36,7 +36,7 @@ end)
 local Window = redzlib:MakeWindow({
   Title = "redz Hub : Blox Fruits",
   SubTitle = "by redz9999",
-  SaveFolder = "redz_hub", -- название Json файла с сохранениями Flag ов
+  SaveFolder = "redz_hub", -- Name Json File with Flags Saves.
   Introduction = true,
   IntroductionTitle = "redz Hub",
   IntroductionDescription = "the best script",

@@ -1482,8 +1482,7 @@ function redzlib:SetTheme(NewTheme)
 			Comnection:FireConnection("ThemeChanged", NewTheme)
 		end
 	end)
-
-	
+		
 	local function safeSetProperty(inst, propName, value)
 		if not inst then return false end
 		
@@ -1513,7 +1512,6 @@ function redzlib:SetTheme(NewTheme)
 		local inst = Val.Instance
 		if not inst or not inst.Parent then return end
 
-		
 		local typesList = {}
 		if type(Val.Type) == "string" then
 			typesList[1] = Val.Type
@@ -1523,8 +1521,6 @@ function redzlib:SetTheme(NewTheme)
 			end
 		end
 
-		
-		local propName
 		if type(GetColor) == "function" then
 			
 			local ok, res = pcall(function() return GetColor(inst) end)
@@ -1532,7 +1528,6 @@ function redzlib:SetTheme(NewTheme)
 				propName = res
 			end
 		end
-
 		
 		for _, t in ipairs(typesList) do
 			if t == "Gradient" then
@@ -1553,7 +1548,6 @@ function redzlib:SetTheme(NewTheme)
 							end
 						end)
 					else
-						
 						safeSetProperty(inst, "Color", cs)
 					end
 				end
@@ -1570,7 +1564,6 @@ function redzlib:SetTheme(NewTheme)
 				end)
 
 			elseif t == "Stroke" then
-				
 				local themeVal = Theme["Color Stroke"]
 				if propName and type(propName) == "string" then
 					safeSetProperty(inst, propName, themeVal)
@@ -1587,12 +1580,10 @@ function redzlib:SetTheme(NewTheme)
 				end
 
 			elseif t == "Theme" or t == "ScrollBar" then
-				
 				local themeVal = Theme["Color Theme"]
 				if propName and type(propName) == "string" then
 					safeSetProperty(inst, propName, themeVal)
 				else
-					
 					pcall(function()
 						if typeof(inst.BackgroundColor3) == "Color3" then
 							inst.BackgroundColor3 = themeVal
@@ -1636,7 +1627,6 @@ function redzlib:SetTheme(NewTheme)
 					end)
 				end
 			else
-				
 				pcall(function()
 					if Theme["Color Text"] and rawget(inst, "TextColor3") ~= nil then inst.TextColor3 = Theme["Color Text"] end
 					if Theme["Color Hub 2"] and rawget(inst, "BackgroundColor3") ~= nil then inst.BackgroundColor3 = Theme["Color Hub 2"] end
@@ -1834,7 +1824,7 @@ function redzlib:MakeWindow(Configs)
 			TextXAlignment = "Left",
 			TextYAlignment = "Bottom",
 			TextSize = 8,
-			Font = Enum.Font.Gotham,
+			Font = Enum.Font.GothamMedium,
 			Name = "SubTitle"
 		}), "DarkText")
 	}), "Text")
@@ -1928,11 +1918,9 @@ function redzlib:MakeWindow(Configs)
     CloseButton.Name = "Close"
     CloseButton.Parent = parentFrame
 
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 3)
     corner.Parent = CloseButton
-
 
     local overlay = Instance.new("TextLabel")
     overlay.Size = UDim2.new(1,0,1,0)
@@ -1942,7 +1930,6 @@ function redzlib:MakeWindow(Configs)
     overlay.Font = Enum.Font.GothamBold
     overlay.TextSize = 14
     overlay.Parent = CloseButton
-
 
     local stroke = Instance.new("UIStroke")
     stroke.Parent = overlay
@@ -1999,7 +1986,6 @@ function redzlib:MakeWindow(Configs)
     MinimizeButton.MouseLeave:Connect(function()
 	    MinimizeButton.BackgroundTransparency = 1
     end)
-
 
     MinimizeButton.MouseButton1Down:Connect(function()
 	    MinimizeButton.BackgroundColor3 = Color3.fromRGB(170, 170, 170)
@@ -2118,6 +2104,11 @@ function Window:Notify(Configs)
     local Content = Configs.Content or "This is a Notification"
     local Image = Configs.Image or ""
     local Duration = Configs.Duration or 5
+
+	Image = redzlib:GetIcon(Image)
+	  if not Image:find("rbxassetid://") or Image:gsub("rbxassetid://", ""):len() < 6 then
+		  Image = ""
+	  end
     
     local leftOffset = (Image ~= "" ) and (10 + 32 + 8) or 15
     local rightPad = (Image ~= "" ) and 62 or 20

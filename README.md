@@ -163,7 +163,7 @@ Tab1:AddSlider({
   end
 })
 ```
-## Dropdown 1 ( Defaukt )
+## Dropdown 1 ( Default )
 ```lua
 Tab1:AddDropdown({
   Name = "Players List",
